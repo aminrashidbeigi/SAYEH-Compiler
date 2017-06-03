@@ -97,9 +97,7 @@ public class InputReader {
         return list;
     }
 
-
-    public static void main(String[] args) {
-        new InputReader("D:\\Uni\\Terms\\4\\Architecture - Dr Shiri\\Project\\Compiler\\ShadowCompiler\\examples\\test.c");
+    public ArrayList<String> getTokens() {
+        return tokens;
     }
-
 }

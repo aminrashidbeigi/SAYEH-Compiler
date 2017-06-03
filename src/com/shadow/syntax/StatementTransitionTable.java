@@ -5,7 +5,7 @@ package com.shadow.syntax;
  */
 public class  StatementTransitionTable {
 
-    final static int[][] stt = new int[][] {
+    public final static int[][] stt = new int[][] {
         // Int	Char	Bool	While	If	var	(	)	=	Op	;	,	‘ ‘	+=	Eif	Ewh	Inc	Num
             { 8,     1,	5,	15,	14,	12,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1}, //0
             {-1,	-1,	-1,	-1,	-1,	2,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1}, //1
