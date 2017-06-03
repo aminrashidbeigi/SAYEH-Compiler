@@ -16,29 +16,85 @@ public class SyntaxStateMachine {
     }
 
     public void syntaxHandler(){
+
+        for (int i = 0; i < tokens.size(); i++){
+            System.out.println(i + " : " + tokens.get(i));
+        }
+
         int cs = 0;
-        int ns = cs;
+        int tokenCounter = 0;
         for (String string : tokens){
-            cs = ns;
-            switch (cs){
-                case 0 :
-                    if (string.equals("int")) ns = 8;
-                    else if (string.equals("char")) ns = 1;
-                    else if (string.equals("bool")) ns = 5;
-                    else if (string.equals("while")) ns = 15;
-                    else if (string.equals("if")) ns = 14;
-                    else if (isVariable(string)) ns = 12;
-                    else {
-                        System.out.println(string + "seen." + "Keyword Expected !");
-                    }
-                default:
-                    System.out.println("Invalid token");
+            tokenCounter++;
+            int key = keywordValueGenerator(string);
+            if (cs < 0){
+                errorHandler(cs, string);
+                return;
+            } else {
+                if (key < 0){
+                    System.out.println("invalid token.\n");
+                    return;
+                }
+                cs = transitionTable[cs][key];
+            }
+            if (tokenCounter == tokens.size()){
+                System.out.println("Compiled Successfully :)");
             }
         }
+    }
+
+    private int keywordValueGenerator(String string){
+        if (string.equals("int")) return 0;
+        else if (string.equals("char")) return 1;
+        else if (string.equals("bool")) return 2;
+        else if (string.equals("while")) return 3;
+        else if (string.equals("if")) return 4;
+        else if (string.matches("\\w+")){
+            if ((int)string.toCharArray()[0] > 57)return 5;
+        }
+        else if (string.equals("(")) return 6;
+        else if (string.equals(")")) return 7;
+        else if (string.equals("=")) return 8;
+        else if (string.equals("+") || string.equals("-") || string.equals("*") ||
+                string.equals("/") || string.equals("%")) return 9;
+        else if (string.equals(";")) return 10;
+        else if (string.equals(",")) return 11;
+        else if (string.equals("'")) return 12;
+        else if (string.equals("+=") || string.equals("-=") || string.equals("*=") ||
+                string.equals("/=") || string.equals("%=")) return 13;
+        else if (string.equals("++") || string.equals("--")) return 16;
+        else if (string.matches("\\d+")) return 17;
+        return -1;
     }
 
     private boolean isVariable(String string){
         if (string.matches("^([a − z][A − Z]) + ([a − z][A − Z][0 − 9])∗")) return true;
         return false;
+    }
+
+    private void errorHandler(int state, String seenString){
+        switch (state){
+            case -1:
+                System.out.println(seenString + "seen!. " + "keyword expected.\n"); //state 0
+            case -2:
+                System.out.println(seenString + "seen!. " + "variable expected.\n"); //state 1, 5, 8
+            case -3:
+                System.out.println(seenString + "seen!. " + "= or ; or , expected.\n"); //state 2, 6, 9
+            case -4:
+                System.out.println(seenString + "seen!. " + "variable or character or parenthesis expected.\n"); // state 3
+            case -5:
+                System.out.println(seenString + "seen!. " + "; or parenthesis expected.\n"); // state 4
+            case -6:
+                System.out.println(seenString + "seen!. " + "variable expected.\n"); //state 5
+            case -7:
+                System.out.println(seenString + "seen!. " + "; expected.\n"); //state 7, 13
+            case -8:
+                System.out.println(seenString + "seen!. " + "variable or number or parenthesis expected.\n"); //state 10
+            case -9:
+                System.out.println(seenString + "seen!. " + "; or operator or parenthesis expected.\n"); //state 11
+            case -10:
+                System.out.println(seenString + "seen!. " + "operator or ++ or -- or = or += ... expected.\n"); //state 12
+            case -11:
+                System.out.println("handle nashode"); //state 14, 15
+            }
     }
 }

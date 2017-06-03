@@ -41,9 +41,10 @@ public class InputReader {
             while (fis.available() > 0)
                 inputString += (char)fis.read();
 
-            for (String retval : inputString.split("\\s+")){
-                tempTokens.add(retval);
-            }
+            for (String retval : inputString.split("\\s+"))
+                if (!retval.isEmpty())
+                    tempTokens.add(retval);
+
 //            for (String s : tempTokens){
 //                char[] chars = s.toCharArray();
 //                String string = "";
