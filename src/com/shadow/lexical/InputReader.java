@@ -99,7 +99,7 @@ public class InputReader {
 
 
     public static void main(String[] args) {
-        new InputReader("D:\\Uni\\Terms\\4\\Architecture - Dr Shiri\\Project\\Compiler\\ComplerJava\\test.c");
+        new InputReader("D:\\Uni\\Terms\\4\\Architecture - Dr Shiri\\Project\\Compiler\\ShadowCompiler\\examples\\test.c");
     }
 
 }
