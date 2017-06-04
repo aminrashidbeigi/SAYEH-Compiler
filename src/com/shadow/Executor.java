@@ -1,6 +1,7 @@
 package com.shadow;
 
 import com.shadow.lexical.InputReader;
+import com.shadow.syntax.ExpressionTransitionTable;
 import com.shadow.syntax.StatementTransitionTable;
 import com.shadow.syntax.SyntaxStateMachine;
 
@@ -16,7 +17,7 @@ public class Executor {
     public Executor() {
         InputReader ir = new InputReader(fileDirectory);
         tokens = ir.getTokens();
-        SyntaxStateMachine ssm = new SyntaxStateMachine(StatementTransitionTable.stt, tokens);
+        SyntaxStateMachine ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens);
         ssm.syntaxHandler();
     }
 
