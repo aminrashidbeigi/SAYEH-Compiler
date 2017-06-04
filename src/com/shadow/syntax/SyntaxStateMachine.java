@@ -36,14 +36,21 @@ public class SyntaxStateMachine {
         }
     }
 
+    boolean isOpenBraceOrSemicolon = false;
     boolean afterEq = false;
     private int statementHandler(String string, int cs){
         int key = statementKeywordValueGenerator(string);
         if (key < 0){
             System.out.println("invalid token.\n");
             return -100;
-        } else if (key == 18 || key == 19){
+        } else if (key == 18){
+            isOpenBraceOrSemicolon = true;
             return 0;
+        } else if (key == 19 && isOpenBraceOrSemicolon){
+            return 0;
+        } else if (key == 19){
+            System.out.println(string + " seen!. " + "; expected.\n");
+            return -100;
         }
 
         if (cs >= 0 && cs != 15 && cs != 14){
@@ -62,6 +69,11 @@ public class SyntaxStateMachine {
         if (cs < 0){
             errorHandler(cs, string);
             return -100;
+        }
+        if (key == 18 || key == 10){
+            isOpenBraceOrSemicolon = true;
+        } else {
+            isOpenBraceOrSemicolon = false;
         }
         return cs;
     }
