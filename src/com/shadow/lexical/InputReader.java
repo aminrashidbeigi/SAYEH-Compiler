@@ -1,16 +1,16 @@
 package com.shadow.lexical;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Amin Rashidbeigi on 6/2/2017.
  */
 public class InputReader {
 
+    private Map lineMap;
     private String fileName;
     private File file;
     private ArrayList<String> tokens;
@@ -18,6 +18,7 @@ public class InputReader {
 
     public InputReader(String fileName) {
         this.fileName = fileName;
+        lineMap = new HashMap();
         file = new File(fileName);
         tokens = new ArrayList<>();
 //        invalidTokens = invalidTokensGenerator();
@@ -41,6 +42,7 @@ public class InputReader {
             while (fis.available() > 0)
                 inputString += (char)fis.read();
 
+            mapFiller(inputString);
             for (String retval : inputString.split("\\s+"))
                 if (!retval.isEmpty())
                     tempTokens.add(retval);
@@ -98,7 +100,21 @@ public class InputReader {
         return list;
     }
 
+    private void mapFiller(String string){
+        int lineNumber = 0;
+        for (String token : string.split("\\n+")){
+            lineNumber++;
+            for (String subToken : token.split("\\s+")){
+                lineMap.put(subToken, lineNumber);
+            }
+        }
+    }
+
     public ArrayList<String> getTokens() {
         return tokens;
+    }
+
+    public Map getLineMap() {
+        return lineMap;
     }
 }
