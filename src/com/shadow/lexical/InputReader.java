@@ -64,9 +64,7 @@ public class InputReader {
 //                }
 //            }
 
-            for (String s : tempTokens){
-                System.out.println(s);
-            }
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {

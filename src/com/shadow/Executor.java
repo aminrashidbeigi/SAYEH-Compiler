@@ -1,6 +1,7 @@
 package com.shadow;
 
 import com.shadow.lexical.InputReader;
+import com.shadow.semantic.SemanticStateMachine;
 import com.shadow.syntax.ExpressionTransitionTable;
 import com.shadow.syntax.StatementTransitionTable;
 import com.shadow.syntax.SyntaxStateMachine;
@@ -22,6 +23,10 @@ public class Executor {
         lineMap = ir.getLineMap();
         SyntaxStateMachine ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, lineMap);
         ssm.syntaxHandler();
+        if (ssm.isSyntaxIsOK()){
+            SemanticStateMachine semanticSM = new SemanticStateMachine(tokens);
+            semanticSM.semanticHandler();
+        }
     }
 
     public static void main(String[] args) {

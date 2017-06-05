@@ -17,6 +17,7 @@ public class SyntaxStateMachine {
     private boolean oneTime = false;
     private int parenthesis = 0;
     private Map lineMap;
+    private boolean syntaxIsOK = false;
 
     public SyntaxStateMachine(int[][] statementTransitionTable, int[][] expressionTransitionTable, ArrayList<String> tokens, Map lineMap) {
         this.statementTransitionTable = statementTransitionTable;
@@ -34,11 +35,14 @@ public class SyntaxStateMachine {
             if (scs == -100 || ecs == -100 ) return;
             else if (scs == 14 || scs == 15){
                 ecs = expressionHandler(string, ecs);
+                if (ecs == -100) return;
             } else {
                 scs = statementHandler(string, scs);
+                if (scs == -100) return;
             }
             if (tokenCounter == tokens.size()){
-                System.out.println("Compiled Successfully :)");
+                syntaxIsOK = true;
+                System.out.println("Syntax is OK :)");
             }
         }
     }
@@ -46,7 +50,7 @@ public class SyntaxStateMachine {
     private int statementHandler(String string, int cs){
         int key = statementKeywordValueGenerator(string);
         if (key < 0){
-            System.out.println("invalid token.\n");
+            System.out.println(string + " : invalid token.\n");
             return -100;
         } else if (key == 50){
             isOpenBraceOrSemicolon = true;
@@ -54,7 +58,7 @@ public class SyntaxStateMachine {
         } else if (key == 51 && isOpenBraceOrSemicolon){
             return 0;
         } else if (key == 51){
-            System.out.println(string + " seen! " + "; expected.\n");
+            System.out.println("In line "+ lineMap.get(string) + ", " + string + " seen! " + "; expected.\n");
             return -100;
         }
         if (cs >= 0 && cs != 15 && cs != 14){
@@ -81,7 +85,7 @@ public class SyntaxStateMachine {
     private int expressionHandler(String string, int cs){
         int key = expressionKeywordValueGenerator(string);
         if (key < 0){
-            System.out.println("invalid token.\n");
+            System.out.println(string + " : invalid token.\n");
             return -100;
         } else if (key == 0){
             parenthesis++;
@@ -226,5 +230,9 @@ public class SyntaxStateMachine {
                 System.out.println("Undefined error");
                 break;
             }
+    }
+
+    public boolean isSyntaxIsOK() {
+        return syntaxIsOK;
     }
 }
