@@ -26,6 +26,7 @@ public class SyntaxStateMachine {
         this.lineMap = lineMap;
     }
 
+    boolean isBoolExpression = false;
     public void syntaxHandler(){
         int ecs = 0;
         int tokenCounter = 0;
@@ -33,7 +34,8 @@ public class SyntaxStateMachine {
         for (String string : tokens){
             tokenCounter++;
             if (scs == -100 || ecs == -100 ) return;
-            else if (scs == 14 || scs == 15){
+            else if (scs == 14 || scs == 15 || scs == 7){
+                isBoolExpression = true;
                 ecs = expressionHandler(string, ecs);
                 if (ecs == -100) return;
             } else {
@@ -84,6 +86,11 @@ public class SyntaxStateMachine {
 
     private int expressionHandler(String string, int cs){
         int key = expressionKeywordValueGenerator(string);
+        if (string.equals(";") && isBoolExpression){
+            isBoolExpression = false;
+            scs = 0;
+            return 0;
+        }
         if (key < 0){
             System.out.println(string + " : invalid token.\n");
             return -100;
@@ -92,12 +99,12 @@ public class SyntaxStateMachine {
         } else if (key == 1){
             parenthesis--;
         }
-        if (parenthesis == 1){
+        if (parenthesis == 1 && !isBoolExpression){
             if (!oneTime){
                 oneTime = true;
                 return 0;
             }
-        } else if (parenthesis == 0){
+        } else if (parenthesis == 0 && !isBoolExpression){
             scs = 0;
             return 0;
         }

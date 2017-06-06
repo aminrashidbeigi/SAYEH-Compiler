@@ -25,14 +25,21 @@ public class SemanticStateMachine {
         int ls = 0;
         int key = 0;
         int tokenCounter = 0;
-        String lastValue = "";
+        String lastVariable = "";
         for (String token : tokens){
             tokenCounter++;
             key = semanticKeyValueGenerator(token);
-            if (semanticKeyValueGenerator(token) == 1) lastValue = token;
+            if (semanticKeyValueGenerator(token) == 1) lastVariable = token;
             ls = cs;
+            if (key < 0){
+                System.out.println(token + " : invalid token!");
+                return;
+            }
             cs = SemanticTransitionTable.semanticTT[cs][key];
             switch (cs){
+                case -1:
+                    System.out.println("Semantic undefined error :(");
+                    return;
                 case 2:
                     if (ls == 1){
                         if (isVariableDefined.containsKey(token)){
@@ -44,11 +51,12 @@ public class SemanticStateMachine {
                     } else {
                         if (!isVariableDefined.containsKey(token)){
                             errorHandler(-4,token);
+                            return;
                         }
                     }
                     break;
                 case 4:
-                    variableValue.put(lastValue, token);
+                    variableValue.put(lastVariable, token);
                     break;
                 case 5:
                     if (!variableValue.containsKey(token)){
@@ -57,9 +65,14 @@ public class SemanticStateMachine {
                     }
                     break;
                 case 8:
-                    if (Integer.parseInt(token) == 0){
-                        errorHandler(-3, token);
-                        return;
+                    if (lastVariable.equals(token)){
+                        if (Integer.parseInt((String)variableValue.get(token)) == 0){
+                            errorHandler(-3, token);
+                            return;
+                        } else if (Integer.parseInt(token) == 0){
+                            errorHandler(-3, token);
+                            return;
+                        }
                     }
                     break;
 
@@ -79,16 +92,16 @@ public class SemanticStateMachine {
         semanticIsOK = false;
         switch (error){
             case -2 :
-                System.out.println("variable value is not defined");
+                System.out.println(seenString + " : variable value is not defined");
                 break;
             case -3:
                 System.out.println("division by zero error");
                 break;
             case -4:
-                System.out.println("undeclared variable");
+                System.out.println(seenString + " : undeclared variable");
                 break;
             case -5:
-                System.out.println("multiple deceleration of variable");
+                System.out.println(seenString + " : multiple deceleration of variable");
                 break;
         }
     }
@@ -103,7 +116,9 @@ public class SemanticStateMachine {
         else if (token.equals("true")||token.equals("false")) return 3;
         else if (token.toCharArray()[0] == '\'') return 4;
         else if (token.equals("+") ||token.equals("-") ||token.equals("*") ||
-                token.equals("%")) return 5;
+                token.equals("%") || token.equals("||") || token.equals("&&") || token.equals("==")
+                || token.equals("<") || token.equals(">") || token.equals("<=")
+                || token.equals(">=")) return 5;
         else if (token.equals("/")) return 6;
         else if (token.equals("=")) return 7;
         else if (token.equals(";")) return 8;
