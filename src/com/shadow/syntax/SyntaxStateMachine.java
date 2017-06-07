@@ -18,23 +18,26 @@ public class SyntaxStateMachine {
     private int parenthesis = 0;
     private Map lineMap;
     private boolean syntaxIsOK = false;
-
-    public SyntaxStateMachine(int[][] statementTransitionTable, int[][] expressionTransitionTable, ArrayList<String> tokens, Map lineMap) {
+    private int[] tokensOfEachLine;
+    private boolean isBoolExpression = false;
+    private int lineCounter =  0;
+    public SyntaxStateMachine(int[][] statementTransitionTable, int[][] expressionTransitionTable,
+                              ArrayList<String> tokens, int[] tokensOfEachLine) {
         this.statementTransitionTable = statementTransitionTable;
         this.expressionTransitionTable = expressionTransitionTable;
         this.tokens = tokens;
-        this.lineMap = lineMap;
+        this.tokensOfEachLine = tokensOfEachLine;
     }
-
-    boolean isBoolExpression = false;
     public void syntaxHandler(){
         int ecs = 0;
         int tokenCounter = 0;
-
         for (String string : tokens){
+            while (tokenCounter == tokensOfEachLine[lineCounter]){
+                lineCounter ++;
+            }
             tokenCounter++;
             if (scs == -100 || ecs == -100 ) return;
-            else if (scs == 14 || scs == 15 || scs == 7){
+            else if (scs != 14 || scs != 15 || scs != 7){
                 isBoolExpression = true;
                 ecs = expressionHandler(string, ecs);
                 if (ecs == -100) return;
@@ -52,7 +55,7 @@ public class SyntaxStateMachine {
     private int statementHandler(String string, int cs){
         int key = statementKeywordValueGenerator(string);
         if (key < 0){
-            System.out.println(string + " : invalid token.\n");
+            System.out.println("In line" + lineCounter + ", " + string + " : invalid token.\n");
             return -100;
         } else if (key == 50){
             isOpenBraceOrSemicolon = true;
@@ -60,7 +63,7 @@ public class SyntaxStateMachine {
         } else if (key == 51 && isOpenBraceOrSemicolon){
             return 0;
         } else if (key == 51){
-            System.out.println("In line "+ lineMap.get(string) + ", " + string + " seen! " + "; expected.\n");
+            System.out.println("In line "+ lineCounter + ", " + string + " seen! " + "; expected.\n");
             return -100;
         }
         if (cs >= 0 && cs != 15 && cs != 14){
@@ -92,7 +95,7 @@ public class SyntaxStateMachine {
             return 0;
         }
         if (key < 0){
-            System.out.println(string + " : invalid token.\n");
+            System.out.println("In line" + lineCounter + ", " + string + " : invalid token.\n");
             return -100;
         } else if (key == 0){
             parenthesis++;
@@ -171,67 +174,67 @@ public class SyntaxStateMachine {
     private void errorHandler(int state, String seenString){
         switch (state){
             case -1:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "keyword or variable expected.\n"); //state 0
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "keyword or variable expected.\n"); //state 0
                 break;
             case -2:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "variable expected.\n"); //state 1, 5, 8
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "variable expected.\n"); //state 1, 5, 8
                 break;
             case -3:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "= or ; or , expected.\n"); //state 2, 6, 9
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "= or ; or , expected.\n"); //state 2, 6, 9
                 break;
             case -4:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "variable or character or parenthesis expected.\n"); // state 3
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "variable or character or parenthesis expected.\n"); // state 3
                 break;
             case -5:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "; or parenthesis expected.\n"); // state 4
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "; or parenthesis expected.\n"); // state 4
                 break;
             case -6:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "variable expected.\n"); //state 5
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "variable expected.\n"); //state 5
                 break;
             case -7:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "; expected.\n"); //state 7, 13
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "; expected.\n"); //state 7, 13
                 break;
             case -8:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "variable or number or parenthesis expected.\n"); //state 10
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "variable or number or parenthesis expected.\n"); //state 10
                 break;
             case -9:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "; or operator or parenthesis expected.\n"); //state 11
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "; or operator or parenthesis expected.\n"); //state 11
                 break;
             case -10:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "operator or ++ or -- or = or += ... expected.\n"); //state 12
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "operator or ++ or -- or = or += ... expected.\n"); //state 12
                 break;
             case -11:
                 System.out.println("handle nashode"); //state 14, 15
                 break;
             case -12:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "variable or number or parenthesis or character expected.\n"); //Estate 0
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "variable or number or parenthesis or character expected.\n"); //Estate 0
                 break;
             case -13:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "logical operation or parenthesis expected.\n"); //Estate 1
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "logical operation or parenthesis expected.\n"); //Estate 1
                 break;
             case -14:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or conditional operation expected.\n"); //Estate 2
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or conditional operation expected.\n"); //Estate 2
                 break;
             case -15:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or variable or number expected.\n"); //Estate 4, 9
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or variable or number expected.\n"); //Estate 4, 9
                 break;
             case -16:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or conditional or logical operation expected.\n"); //Estate 3
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or conditional or logical operation expected.\n"); //Estate 3
                 break;
             case -17:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or variable or number or boolean value or character expected.\n"); //Estate 5
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or variable or number or boolean value or character expected.\n"); //Estate 5
                 break;
             case -18:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or operation or logical operation expected.\n"); //Estate 6, 7
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or operation or logical operation expected.\n"); //Estate 6, 7
                 break;
             case -19:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or logical operation expected.\n"); //Estate 8
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or logical operation expected.\n"); //Estate 8
                 break;
             case -20:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or conditional operation expected.\n"); //Estate 10
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or conditional operation expected.\n"); //Estate 10
                 break;
             case -21:
-                System.out.println("In line "+ lineMap.get(seenString) + ", " + seenString + " seen! " + "parenthesis or variable or character expected.\n"); //Estate 11
+                System.out.println("In line "+ lineCounter + ", " + seenString + " seen! " + "parenthesis or variable or character expected.\n"); //Estate 11
                 break;
             default:
                 System.out.println("Undefined error");

@@ -1,9 +1,7 @@
 package com.shadow.lexical;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by Amin Rashidbeigi on 6/2/2017.
@@ -15,9 +13,12 @@ public class InputReader {
     private File file;
     private ArrayList<String> tokens;
     private ArrayList<Character> invalidTokens;
+    private int[] tokensOfEachLine = new int[100];
 
     public InputReader(String fileName) {
         this.fileName = fileName;
+        for (int i = 0; i < tokensOfEachLine.length; i++)
+            tokensOfEachLine[i] = 0;
         lineMap = new HashMap();
         file = new File(fileName);
         tokens = new ArrayList<>();
@@ -100,6 +101,15 @@ public class InputReader {
 
     private void mapFiller(String string){
         int lineNumber = 0;
+        Scanner sc = new Scanner(string);
+        int counter = 0;
+        while (sc.hasNext()){
+            int num = sc.nextLine().split("\\s+").length;
+            if (num != 1)
+                tokensOfEachLine[counter] = num;
+            counter++;
+        }
+
         for (String token : string.split("\\n+")){
             lineNumber++;
             for (String subToken : token.split("\\s+")){
@@ -114,5 +124,9 @@ public class InputReader {
 
     public Map getLineMap() {
         return lineMap;
+    }
+
+    public int[] getTokensOfEachLine() {
+        return tokensOfEachLine;
     }
 }
