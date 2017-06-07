@@ -20,7 +20,6 @@ public class Executor {
     public Executor() {
         InputReader ir = new InputReader(fileDirectory);
         tokens = ir.getTokens();
-        lineMap = ir.getLineMap();
         SyntaxStateMachine ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, ir.getTokensOfEachLine());
         ssm.syntaxHandler();
         if (ssm.isSyntaxIsOK()){

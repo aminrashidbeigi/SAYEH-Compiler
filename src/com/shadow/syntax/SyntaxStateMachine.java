@@ -16,7 +16,6 @@ public class SyntaxStateMachine {
     private int scs = 0;
     private boolean oneTime = false;
     private int parenthesis = 0;
-    private Map lineMap;
     private boolean syntaxIsOK = false;
     private int[] tokensOfEachLine;
     private boolean isBoolExpression = false;
@@ -37,7 +36,7 @@ public class SyntaxStateMachine {
             }
             tokenCounter++;
             if (scs == -100 || ecs == -100 ) return;
-            else if (scs != 14 || scs != 15 || scs != 7){
+            else if (scs == 14 || scs == 15 || scs == 7){
                 isBoolExpression = true;
                 ecs = expressionHandler(string, ecs);
                 if (ecs == -100) return;
@@ -95,7 +94,7 @@ public class SyntaxStateMachine {
             return 0;
         }
         if (key < 0){
-            System.out.println("In line" + lineCounter + ", " + string + " : invalid token.\n");
+            System.out.println(string + " : invalid token.\n");
             return -100;
         } else if (key == 0){
             parenthesis++;
@@ -107,7 +106,7 @@ public class SyntaxStateMachine {
                 oneTime = true;
                 return 0;
             }
-        } else if (parenthesis == 0 && !isBoolExpression){
+        } else if (parenthesis == 0){
             scs = 0;
             return 0;
         }

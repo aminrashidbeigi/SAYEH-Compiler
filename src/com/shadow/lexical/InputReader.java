@@ -122,10 +122,6 @@ public class InputReader {
         return tokens;
     }
 
-    public Map getLineMap() {
-        return lineMap;
-    }
-
     public int[] getTokensOfEachLine() {
         return tokensOfEachLine;
     }

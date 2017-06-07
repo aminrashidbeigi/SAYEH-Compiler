@@ -35,7 +35,7 @@ public class SemanticStateMachine {
                 if (token.equals("/*")) commentType = 1;
                 else if (token.equals("//")) commentType = 2;
                 commentStarts = true;
-            }
+            } else if (isKeyword(token)) continue;
             if (commentStarts){
                 if ((commentType == 2 && isNewLine) || token.equals("*/"))
                     commentStarts = false;
@@ -150,79 +150,46 @@ public class SemanticStateMachine {
     }
 
     private boolean isKeyword(String token){
-        return token.equals("int") || token.equals("char") || token.equals("bool") || token.equals("if")
-                || token.equals("while") || token.equals("else") || token.equals("null")
-                || token.equals("true") || token.equals("false");
+        return token.equals("if") || token.equals("while") || token.equals("else");
     }
 
 
 
-    public static int mathExpressionEvaluator(String expression)
-    {
+    public static int mathExpressionEvaluator(String expression) {
         char[] tokens = expression.toCharArray();
-
-        // Stack for numbers: 'values'
         Stack<Integer> values = new Stack<Integer>();
-
-        // Stack for Operators: 'ops'
         Stack<Character> ops = new Stack<Character>();
 
-        for (int i = 0; i < tokens.length; i++)
-        {
-            // Current token is a whitespace, skip it
+        for (int i = 0; i < tokens.length; i++) {
             if (tokens[i] == ' ')
                 continue;
-
-            // Current token is a number, push it to stack for numbers
-            if (tokens[i] >= '0' && tokens[i] <= '9')
-            {
+            if (tokens[i] >= '0' && tokens[i] <= '9') {
                 StringBuffer sbuf = new StringBuffer();
-                // There may be more than one digits in number
                 while (i < tokens.length && tokens[i] >= '0' && tokens[i] <= '9')
                     sbuf.append(tokens[i++]);
                 values.push(Integer.parseInt(sbuf.toString()));
             }
 
-            // Current token is an opening brace, push it to 'ops'
             else if (tokens[i] == '(')
                 ops.push(tokens[i]);
-
-                // Closing brace encountered, solve entire brace
-            else if (tokens[i] == ')')
-            {
+            else if (tokens[i] == ')') {
                 while (ops.peek() != '(')
                     values.push(applyOp(ops.pop(), values.pop(), values.pop()));
                 ops.pop();
             }
-
-            // Current token is an operator.
             else if (tokens[i] == '+' || tokens[i] == '-' ||
-                    tokens[i] == '*' || tokens[i] == '/')
-            {
-                // While top of 'ops' has same or greater precedence to current
-                // token, which is an operator. Apply operator on top of 'ops'
-                // to top two elements in values stack
+                    tokens[i] == '*' || tokens[i] == '/') {
                 while (!ops.empty() && hasPrecedence(tokens[i], ops.peek()))
                     values.push(applyOp(ops.pop(), values.pop(), values.pop()));
-
-                // Push current token to 'ops'.
                 ops.push(tokens[i]);
             }
         }
-
-        // Entire expression has been parsed at this point, apply remaining
-        // ops to remaining values
         while (!ops.empty())
             values.push(applyOp(ops.pop(), values.pop(), values.pop()));
-
-        // Top of 'values' contains result, return it
         return values.pop();
     }
 
-    // Returns true if 'op2' has higher or same precedence as 'op1',
-    // otherwise returns false.
-    public static boolean hasPrecedence(char op1, char op2)
-    {
+    public static boolean hasPrecedence(char op1, char op2) {
         if (op2 == '(' || op2 == ')')
             return false;
         if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-'))
@@ -231,12 +198,8 @@ public class SemanticStateMachine {
             return true;
     }
 
-    // A utility method to apply an operator 'op' on operands 'a'
-    // and 'b'. Return the result.
-    public static int applyOp(char op, int b, int a)
-    {
-        switch (op)
-        {
+    public static int applyOp(char op, int b, int a) {
+        switch (op) {
             case '+':
                 return a + b;
             case '-':
@@ -252,32 +215,4 @@ public class SemanticStateMachine {
         return 0;
     }
 
-//    private Double mathExpressionEvaluator(ArrayList<String> strings){
-//            Stack<String> ops  = new Stack<String>();
-//            Stack<Double> vals = new Stack<Double>();
-//
-//            int i = 0;
-//            while (i < strings.size()) {
-//                String s = strings.get(i);
-//                i++;
-//                if      (s.equals("("))               ;
-//                else if (s.equals("+"))    ops.push(s);
-//                else if (s.equals("-"))    ops.push(s);
-//                else if (s.equals("*"))    ops.push(s);
-//                else if (s.equals("/"))    ops.push(s);
-//                else if (s.equals("sqrt")) ops.push(s);
-//                else if (s.equals(")")) {
-//                    String op = ops.pop();
-//                    double v = vals.pop();
-//                    if      (op.equals("+"))    v = vals.pop() + v;
-//                    else if (op.equals("-"))    v = vals.pop() - v;
-//                    else if (op.equals("*"))    v = vals.pop() * v;
-//                    else if (op.equals("/"))    v = vals.pop() / v;
-//                    else if (op.equals("sqrt")) v = Math.sqrt(v);
-//                    vals.push(v);
-//                }
-//                else vals.push(Double.parseDouble(s));
-//            }
-//        return vals.pop();
-//    }
 }
