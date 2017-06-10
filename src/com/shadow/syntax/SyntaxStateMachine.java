@@ -68,8 +68,8 @@ public class SyntaxStateMachine {
         if (cs >= 0 && cs != 15 && cs != 14){
             if (afterEq){
 //                if (key == 17) cs = 10;
-                if (key == 12) cs = 4;
-                else cs = statementTransitionTable[cs][key];
+//                if (key == 12) cs = 4;
+                cs = statementTransitionTable[cs][key];
                 afterEq = false;
             } else{
                 cs = statementTransitionTable[cs][key];
@@ -163,7 +163,6 @@ public class SyntaxStateMachine {
                  token.equals("%") || token.equals("/")) return 8;
         return -1;
     }
-
 
     private boolean isVariable(String string){
         if (string.matches("^([a − z][A − Z]) + ([a − z][A − Z][0 − 9])∗")) return true;

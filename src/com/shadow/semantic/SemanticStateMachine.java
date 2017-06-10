@@ -10,12 +10,14 @@ public class SemanticStateMachine {
     private ArrayList<String> tokens;
     private Map isVariableDefined;
     private Map variableValue;
+    private Map variableType;
     private boolean semanticIsOK = true;
 
     public SemanticStateMachine(ArrayList<String> tokens) {
         this.tokens = tokens;
         isVariableDefined = new HashMap();
         variableValue = new HashMap();
+        variableType = new HashMap();
     }
 
     private boolean afterEq = false;
@@ -29,6 +31,13 @@ public class SemanticStateMachine {
         boolean commentStarts = false;
         int commentType = 0;
         boolean isNewLine = false;
+        String lastToken = "";
+        boolean isNegativeValue = false;
+        String lastType = "";
+        String lastDefinedVariable = "";
+        String beforEqVariable = "";
+
+
         for (String token : tokens){
             tokenCounter++;
             if (token.equals("/*") || token.equals("//")){
@@ -42,20 +51,54 @@ public class SemanticStateMachine {
                 continue;
             }
             key = semanticKeyValueGenerator(token);
-            if (semanticKeyValueGenerator(token) == 1) lastVariable = token;
+            if (key == 0)
+                lastType = token;
+            if (key == 2)
+                if (token.toCharArray()[0] == '-')
+                    isNegativeValue = true;
+            if (key == 1 && variableValue.containsKey(token))
+                if (((String)variableType.get(token)).equals("int"))
+                    if (Integer.parseInt((String) variableValue.get(token)) < 0)
+                        isNegativeValue = true;
+
+            if (semanticKeyValueGenerator(token) == 7) lastVariable = lastToken;
             ls = cs;
             if (key < 0){
                 System.out.println(token + " : invalid token!");
                 return;
             }
-            cs = SemanticTransitionTable.semanticTT[cs][key];
 
+            cs = SemanticTransitionTable.semanticTT[cs][key];
+            if (key == 7) beforEqVariable = lastToken;
             if (afterEq) {
-                if (key == 8) {
-                    afterEq = false;
-                    variableValue.put(lastVariable, Integer.toString(mathExpressionEvaluator(afterEqString)));
-                } else {
-                    afterEqString += token + " ";
+                if (((String) variableType.get(lastDefinedVariable)).equals("int")){
+                    if (key == 8) {
+                        afterEq = false;
+//                        System.out.println(afterEqString);
+                        variableValue.put(lastVariable, Integer.toString(mathExpressionEvaluator(afterEqString)));
+                        isNegativeValue = false;
+                        afterEqString = "";
+                    } else {
+                        String value;
+                        if (semanticKeyValueGenerator(token) == 1) {
+                            value = variableValue.get(token) + " ";
+                            if (isNegativeValue) {
+                                value = ((String) variableValue.get(token)).toCharArray()[0] + " ";
+                                for (int i = 1; i < ((String) variableValue.get(token)).toCharArray().length; i++)
+                                    value += ((String) variableValue.get(token)).toCharArray()[i];
+                            }
+                            afterEqString += value;
+                        }
+                        else{
+                            value = token + " ";
+                            if (isNegativeValue){
+                                value = token.toCharArray()[0] + " ";
+                                for (int i = 1; i < token.toCharArray().length; i++)
+                                    value+= token.toCharArray()[i];
+                            }
+                            afterEqString += value;
+                        }
+                    }
                 }
             }
             if (key == 7) afterEq = true;
@@ -69,6 +112,8 @@ public class SemanticStateMachine {
                             errorHandler(-5, token);
                             return;
                         }else {
+                            lastDefinedVariable = token;
+                            variableType.put(token, lastType);
                             isVariableDefined.put(token, true);
                         }
                     } else {
@@ -86,6 +131,10 @@ public class SemanticStateMachine {
                         errorHandler(-2, token);
                         return;
                     }
+                    if (!variableType.get(beforEqVariable).equals(variableType.get(token))){
+//                        System.out.println(beforEqVariable + " : "++ " " + token + " : "+ variableType.get(token));
+                        errorHandler(-6, token);
+                    }
                     break;
                 case 8:
                     if (lastVariable.equals(token)){
@@ -102,6 +151,7 @@ public class SemanticStateMachine {
                 default:
                     break;
             }
+            lastToken = token;
         }
 
         if (tokenCounter == tokens.size() && semanticIsOK){
@@ -125,6 +175,10 @@ public class SemanticStateMachine {
                 break;
             case -5:
                 System.out.println(seenString + " : multiple deceleration of variable");
+                break;
+
+            case -6:
+                System.out.println("type problem.");
                 break;
         }
     }
@@ -155,7 +209,7 @@ public class SemanticStateMachine {
 
 
 
-    public static int mathExpressionEvaluator(String expression) {
+    public int mathExpressionEvaluator(String expression) {
         char[] tokens = expression.toCharArray();
         Stack<Integer> values = new Stack<Integer>();
         Stack<Character> ops = new Stack<Character>();
@@ -198,7 +252,7 @@ public class SemanticStateMachine {
             return true;
     }
 
-    public static int applyOp(char op, int b, int a) {
+    public int applyOp(char op, int b, int a) {
         switch (op) {
             case '+':
                 return a + b;
@@ -207,12 +261,12 @@ public class SemanticStateMachine {
             case '*':
                 return a * b;
             case '/':
-                if (b == 0)
-                    throw new
-                            UnsupportedOperationException("Cannot divide by zero");
+                if (b == 0){
+                    errorHandler(-3," ");
+                    return Integer.MAX_VALUE;
+                }
                 return a / b;
         }
         return 0;
     }
-
 }
