@@ -186,11 +186,11 @@ public class SemanticStateMachine {
 
     private int semanticKeyValueGenerator(String token){
         if (token.equals("int") || token.equals("char") || token.equals("bool")) return 0;
+        else if (token.equals("true")||token.equals("false")) return 3;
         else if (token.matches("\\w+")){
             if ((int)token.toCharArray()[0] > 57)return 1;
             else return 2;
         }
-        else if (token.equals("true")||token.equals("false")) return 3;
         else if (token.toCharArray()[0] == '\'') return 4;
         else if (token.equals("+") ||token.equals("-") ||token.equals("*") ||
                 token.equals("%") || token.equals("||") || token.equals("&&") || token.equals("==")
@@ -268,5 +268,9 @@ public class SemanticStateMachine {
                 return a / b;
         }
         return 0;
+    }
+
+    public boolean isSemanticOk(){
+        return semanticIsOK;
     }
 }

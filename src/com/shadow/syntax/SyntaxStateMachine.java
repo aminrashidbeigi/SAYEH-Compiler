@@ -1,7 +1,6 @@
 package com.shadow.syntax;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 /**
  * Created by Amin Rashidbeigi on 6/3/2017.
@@ -86,7 +85,7 @@ public class SyntaxStateMachine {
         return cs;
     }
 
-    private int expressionHandler(String string, int cs){
+    public int expressionHandler(String string, int cs){
         int key = expressionKeywordValueGenerator(string);
         if (string.equals(";") && isBoolExpression){
             isBoolExpression = false;
@@ -147,9 +146,10 @@ public class SyntaxStateMachine {
         return -1;
     }
 
-    private int expressionKeywordValueGenerator(String token){
+    public int expressionKeywordValueGenerator(String token){
         if (token.equals("(")) return 0;
         else if (token.equals(")")) return 1;
+        else if (token.equals("true") || token.equals("false")) return 7;
         else if (token.matches("\\w+")){
             if ((int)token.toCharArray()[0] > 57)return 2;
             else return 3;
@@ -158,7 +158,6 @@ public class SyntaxStateMachine {
         else if (token.equals("||") || token.equals("&&")) return 5;
         else if (token.equals("==") || token.equals(">=") || token.equals("<=") ||
                  token.equals("<") || token.equals(">")) return 6;
-        else if (token.equals("true") || token.equals("false")) return 7;
         else if (token.equals("+") || token.equals("-") || token.equals("*") ||
                  token.equals("%") || token.equals("/")) return 8;
         return -1;
@@ -240,7 +239,7 @@ public class SyntaxStateMachine {
             }
     }
 
-    public boolean isSyntaxIsOK() {
+    public boolean isSyntaxOK() {
         return syntaxIsOK;
     }
 }

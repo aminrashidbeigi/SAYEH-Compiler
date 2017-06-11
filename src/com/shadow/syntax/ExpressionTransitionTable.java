@@ -6,7 +6,7 @@ package com.shadow.syntax;
 public class ExpressionTransitionTable {
 
     public static final int[][] ett = new int[][]{
-            {0,-12,3,2,10,-12,-12,-12,-12},
+            {0,-12,3,2,10,-12,-12,1,-12},
             {-13,1,-13,-13,-13,0,-13,-13,-13},
             {-14,2,-14,-14,-14,-14,5,-14,4},
             {-16,3,-16,-16,-16,0,5,-16,4},
