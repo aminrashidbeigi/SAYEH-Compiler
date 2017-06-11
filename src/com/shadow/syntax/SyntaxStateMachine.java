@@ -44,6 +44,10 @@ public class SyntaxStateMachine {
                 if (scs == -100) return;
             }
             if (tokenCounter == tokens.size()){
+                if (!(string.equals(";") || string.equals("}"))){
+                    System.out.println("; or } expected");
+                    return;
+                }
                 syntaxIsOK = true;
                 System.out.println("Syntax is OK :)");
             }

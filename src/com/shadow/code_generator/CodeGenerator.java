@@ -80,6 +80,11 @@ public class CodeGenerator {
                 break;
             }
 
+            case 6 : {
+                memoryFiller(token);
+                break;
+            }
+
             case 9 : {
                 memoryFiller(token);
                 break;
