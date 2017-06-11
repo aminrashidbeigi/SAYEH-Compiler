@@ -4,10 +4,7 @@ import com.shadow.syntax.ExpressionTransitionTable;
 import com.shadow.syntax.StatementTransitionTable;
 import com.shadow.syntax.SyntaxStateMachine;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by Amin Rashidbeigi on 6/11/2017.
@@ -20,13 +17,15 @@ public class CodeGenerator {
     private SyntaxStateMachine ssm;
     private Map variableInMemoryIndex;
     private boolean[] isValidRegisterIndex;
-
+    private int lastUsedMemoryWord;
+    private Stack<Integer> processingRegisters;
     public CodeGenerator(ArrayList<String> tokens) {
         ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, new int[1]);
         R = new int[4];
         isValidRegisterIndex = new boolean[4];
         memory = new String[1024];
         variableInMemoryIndex = new HashMap();
+        processingRegisters = new Stack<>();
         Arrays.fill(R, 0);
         Arrays.fill(memory, "");
         Arrays.fill(isValidRegisterIndex, true);
@@ -56,7 +55,7 @@ public class CodeGenerator {
     private void expressionCodeGeneratorHandler(int cs, String token){
         switch (cs){
             case 1 : {
-                checkCodeToPrint(token);
+                checkCodeToPrint(token,cs);
                 break;
             }
         }
@@ -66,39 +65,41 @@ public class CodeGenerator {
     private void codeGeneratorStateHandler(int cs, String token){
         switch (cs){
             case 0 : {
-
+                processingRegisters.removeAllElements();
                 break;
             }
 
             case 2 : {
                 memoryFiller(token);
+                checkCodeToPrint(token,cs);
                 break;
             }
 
             case 4 : {
-                checkCodeToPrint(token);
+                checkCodeToPrint(token,cs);
                 break;
             }
 
             case 6 : {
                 memoryFiller(token);
+                checkCodeToPrint(token,cs);
                 break;
             }
 
             case 9 : {
+                checkCodeToPrint(token,cs);
                 memoryFiller(token);
                 break;
             }
 
             case 11: {
-                checkCodeToPrint(token);
+                checkCodeToPrint(token,cs);
                 break;
             }
 
             default:
                 break;
         }
-
     }
 
     private void memoryFiller(String data){
@@ -110,40 +111,50 @@ public class CodeGenerator {
             }
         }
 
+        lastUsedMemoryWord = lastEmptyMemoryWordIndex;
         System.out.println(data + " --> " + lastEmptyMemoryWordIndex);
         variableInMemoryIndex.put(data, lastEmptyMemoryWordIndex);
         memory[lastEmptyMemoryWordIndex] = data;
     }
 
-    private int emptyRegisterIndexFinder(){
+    private int uselessRegisterIndexFinder(){
         int index = 0;
-
         for (int i = 0; i < 4; i++){
             if (isValidRegisterIndex[i]){
                 index = i;
-                break;
+                if (!processingRegisters.contains(index)) break;
             }
         }
-
         return index;
     }
 
-    private void checkCodeToPrint(String token){
+    private void checkCodeToPrint(String token, int cs){
         int key = ssm.statementKeywordValueGenerator(token);
-        if (key == 17){
-            int number = Integer.parseInt(token);
-            String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(number)).replace(" ","0");
-            int registerIndex = emptyRegisterIndexFinder();
-            System.out.println("bits: " + bits);
+
+        if (cs == 6 || cs == 9) {
+            String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
+            int registerIndex = uselessRegisterIndexFinder();
+            System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
+            processingRegisters.push(registerIndex);
             mil(registerIndex, bits);
             mih(registerIndex, bits);
-        } else if (key == 12) {
+        } else if (cs == 11){
+            int number = Integer.parseInt(token);
+            String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(number)).replace(" ","0");
+            int registerIndex = uselessRegisterIndexFinder();
+            System.out.println("token: " + token);
+            System.out.println("R_" + registerIndex);
+            processingRegisters.push(registerIndex);
+            mil(registerIndex, bits);
+            mih(registerIndex, bits);
+        } else if (cs == 4) {
             char[] chars = token.toCharArray();
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString((int)chars[1])).replace(" ","0");
-            int registerIndex = emptyRegisterIndexFinder();
-            System.out.println("bits: " + bits);
+            int registerIndex = uselessRegisterIndexFinder();
+            System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
+            processingRegisters.push(registerIndex);
             mil(registerIndex, bits);
             mih(registerIndex, bits);
         } else if (token.equals("true") || token.equals("false")){
@@ -151,9 +162,10 @@ public class CodeGenerator {
             if (token.equals("true")) number = 1;
             else number = 0;
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(number)).replace(" ","0");
-            int registerIndex = emptyRegisterIndexFinder();
-            System.out.println("bits: " + bits);
+            int registerIndex = uselessRegisterIndexFinder();
+            System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
+            processingRegisters.push(registerIndex);
             mil(registerIndex, bits);
             mih(registerIndex, bits);
 
