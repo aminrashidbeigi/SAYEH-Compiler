@@ -1,5 +1,6 @@
 package com.shadow;
 
+import com.shadow.code_generator.CodeGenerator;
 import com.shadow.lexical.InputReader;
 import com.shadow.semantic.SemanticStateMachine;
 import com.shadow.syntax.ExpressionTransitionTable;
@@ -26,6 +27,7 @@ public class Executor {
             SemanticStateMachine semanticSM = new SemanticStateMachine(tokens);
             semanticSM.semanticHandler();
         }
+        CodeGenerator cg = new CodeGenerator(tokens);
     }
 
     public static void main(String[] args) {

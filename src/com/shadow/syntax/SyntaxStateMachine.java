@@ -119,7 +119,7 @@ public class SyntaxStateMachine {
         return cs;
     }
 
-    private int statementKeywordValueGenerator(String string){
+    public int statementKeywordValueGenerator(String string){
         if (string.equals("int")) return 0;
         else if (string.equals("char")) return 1;
         else if (string.equals("bool")) return 2;
