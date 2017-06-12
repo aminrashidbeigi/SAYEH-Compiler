@@ -19,6 +19,10 @@ public class CodeGenerator {
     private boolean[] isValidRegisterIndex;
     private int lastUsedMemoryWord;
     private Stack<Integer> processingRegisters;
+    private int Rd;
+    private int Rs;
+    private int ls;
+
     public CodeGenerator(ArrayList<String> tokens) {
         ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, new int[1]);
         R = new int[4];
@@ -49,6 +53,7 @@ public class CodeGenerator {
                 scs = stt.stt[scs][key];
                 codeGeneratorStateHandler(scs, token);
             }
+            ls = scs;
         }
     }
 
@@ -66,6 +71,7 @@ public class CodeGenerator {
         switch (cs){
             case 0 : {
                 processingRegisters.removeAllElements();
+                checkCodeToPrint(token, cs);
                 break;
             }
 
@@ -129,11 +135,15 @@ public class CodeGenerator {
     }
 
     private void checkCodeToPrint(String token, int cs){
-        int key = ssm.statementKeywordValueGenerator(token);
 
-        if (cs == 6 || cs == 9) {
+        if (cs == 0){
+            if (ls == 11 || ls == 7 || ls == 4){
+                sta();
+            }
+        } else if (cs == 6 || cs == 9 || cs == 2) {
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
             int registerIndex = uselessRegisterIndexFinder();
+            Rd = registerIndex;
             System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
@@ -143,6 +153,7 @@ public class CodeGenerator {
             int number = Integer.parseInt(token);
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(number)).replace(" ","0");
             int registerIndex = uselessRegisterIndexFinder();
+            Rs = registerIndex;
             System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
@@ -152,6 +163,7 @@ public class CodeGenerator {
             char[] chars = token.toCharArray();
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString((int)chars[1])).replace(" ","0");
             int registerIndex = uselessRegisterIndexFinder();
+            Rs = registerIndex;
             System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
@@ -163,29 +175,36 @@ public class CodeGenerator {
             else number = 0;
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(number)).replace(" ","0");
             int registerIndex = uselessRegisterIndexFinder();
+            Rs = registerIndex;
             System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
             mil(registerIndex, bits);
             mih(registerIndex, bits);
-
         }
     }
 
     private void mil(int registerIndex, String bits){
+        System.out.print("mil : ");
         System.out.print("1111" + binaryRegisterIndex(registerIndex) + "00");
         for (int i = 8; i < 16; i++)
             System.out.print(bits.toCharArray()[i]);
         System.out.println();
-        isValidRegisterIndex[registerIndex] = true;
     }
 
     private void mih(int registerIndex, String bits){
+        System.out.print("mih : ");
         System.out.print("1111" + binaryRegisterIndex(registerIndex) + "01");
         for (int i = 0; i < 8; i++)
             System.out.print(bits.toCharArray()[i]);
         System.out.println();
-        isValidRegisterIndex[registerIndex] = true;
+    }
+
+    private void sta(){
+        System.out.print("sta : ");
+        System.out.print("0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
+        isValidRegisterIndex[Rs] = true;
+        isValidRegisterIndex[Rd] = true;
     }
 
     private String binaryRegisterIndex(int number){
