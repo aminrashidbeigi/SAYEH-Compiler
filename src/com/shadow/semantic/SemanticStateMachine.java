@@ -11,7 +11,8 @@ public class SemanticStateMachine {
     private Map isVariableDefined;
     private Map variableValue;
     private Map variableType;
-    private boolean semanticIsOK = true;
+    private boolean semanticIsOK = false;
+    private boolean isExpression = false;
 
     public SemanticStateMachine(ArrayList<String> tokens) {
         this.tokens = tokens;
@@ -36,15 +37,26 @@ public class SemanticStateMachine {
         String lastType = "";
         String lastDefinedVariable = "";
         String beforEqVariable = "";
-
-
+        int parenthesis = 0;
         for (String token : tokens){
             tokenCounter++;
             if (token.equals("/*") || token.equals("//")){
                 if (token.equals("/*")) commentType = 1;
                 else if (token.equals("//")) commentType = 2;
                 commentStarts = true;
-            } else if (isKeyword(token)) continue;
+            } else if (isKeyword(token)){
+                if (token.equals("if") || token.equals("while")){
+                    isExpression = true;
+                }
+                continue;
+            }
+            if (isExpression){
+                if (token.equals("(")) parenthesis++;
+                else if (token.equals(")")) parenthesis --;
+                if (parenthesis == 0){
+                    isExpression = false;
+                }
+            }
             if (commentStarts){
                 if ((commentType == 2 && isNewLine) || token.equals("*/"))
                     commentStarts = false;
@@ -64,6 +76,10 @@ public class SemanticStateMachine {
             if (semanticKeyValueGenerator(token) == 7) lastVariable = lastToken;
             ls = cs;
             if (key < 0){
+                if (token.equals("{")){
+                    cs = 0;
+                    continue;
+                }
                 System.out.println(token + " : invalid token!");
                 return;
             }
@@ -104,6 +120,11 @@ public class SemanticStateMachine {
             if (key == 7) afterEq = true;
             switch (cs){
                 case -1:
+                    if (isExpression){
+                        cs = 0;
+                        continue;
+                    }
+                    System.out.print(token + " : ");
                     System.out.println("Semantic undefined error :(");
                     return;
                 case 2:
@@ -187,8 +208,10 @@ public class SemanticStateMachine {
     private int semanticKeyValueGenerator(String token){
         if (token.equals("int") || token.equals("char") || token.equals("bool")) return 0;
         else if (token.equals("true")||token.equals("false")) return 3;
+        else if (token.equals("(") || token.equals(")")) return 9;
         else if (token.matches("\\w+")){
-            if ((int)token.toCharArray()[0] > 57)return 1;
+            if ((int)token.toCharArray()[0] > 64 && (int)token.toCharArray()[0] < 91 ||
+                    (int)token.toCharArray()[0] > 96 && (int)token.toCharArray()[0] < 123 )return 1;
             else return 2;
         }
         else if (token.toCharArray()[0] == '\'') return 4;
@@ -199,7 +222,6 @@ public class SemanticStateMachine {
         else if (token.equals("/")) return 6;
         else if (token.equals("=")) return 7;
         else if (token.equals(";")) return 8;
-        else if (token.equals("(") || token.equals(")")) return 9;
         else return -1;
     }
 
