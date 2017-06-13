@@ -67,6 +67,8 @@ public class CodeGenerator {
 
     }
 
+    private String lastVariable = "";
+
     private void codeGeneratorStateHandler(int cs, String token){
         switch (cs){
             case 0 : {
@@ -76,6 +78,7 @@ public class CodeGenerator {
             }
 
             case 2 : {
+                lastVariable = token;
                 memoryFiller(token);
                 checkCodeToPrint(token,cs);
                 break;
@@ -87,12 +90,14 @@ public class CodeGenerator {
             }
 
             case 6 : {
+                lastVariable = token;
                 memoryFiller(token);
                 checkCodeToPrint(token,cs);
                 break;
             }
 
             case 9 : {
+                lastVariable = token;
                 checkCodeToPrint(token,cs);
                 memoryFiller(token);
                 break;
@@ -101,6 +106,10 @@ public class CodeGenerator {
             case 11: {
                 checkCodeToPrint(token,cs);
                 break;
+            }
+
+            case 12: {
+                lastVariable = token;
             }
 
             default:
@@ -138,17 +147,19 @@ public class CodeGenerator {
 
         if (cs == 0){
             if (ls == 11 || ls == 7 || ls == 4){
+                String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
+                int registerIndex = uselessRegisterIndexFinder();
+                Rd = registerIndex;
+                System.out.println("token: " + lastVariable);
+                System.out.println("R_" + registerIndex);
+                processingRegisters.push(registerIndex);
+
+                mil(registerIndex, bits);
+                mih(registerIndex, bits);
                 sta();
             }
         } else if (cs == 6 || cs == 9 || cs == 2) {
-            String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
-            int registerIndex = uselessRegisterIndexFinder();
-            Rd = registerIndex;
-            System.out.println("token: " + token);
-            System.out.println("R_" + registerIndex);
-            processingRegisters.push(registerIndex);
-            mil(registerIndex, bits);
-            mih(registerIndex, bits);
+
         } else if (cs == 11){
             int number = Integer.parseInt(token);
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(number)).replace(" ","0");
@@ -207,6 +218,14 @@ public class CodeGenerator {
         isValidRegisterIndex[Rd] = true;
     }
 
+    private void add(int Rd, int Rs){
+        System.out.print("add : ");
+        System.out.print("1011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
+        isValidRegisterIndex[Rs] = true;
+        isValidRegisterIndex[Rd] = true;
+    }
+
+
     private String binaryRegisterIndex(int number){
         switch (number){
             case 0 :
@@ -221,18 +240,5 @@ public class CodeGenerator {
         return "00";
     }
 
-
-    private String binaryGenerator(int n, int bits) {
-        String binary = "";
-        for(int i = 0; i < bits; ++i, n/=2) {
-            switch (n % 2) {
-                case 0:
-                    binary = "0" + binary;
-                case 1:
-                    binary = "1" + binary;
-            }
-        }
-        return binary;
-    }
 
 }

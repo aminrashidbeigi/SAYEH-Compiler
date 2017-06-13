@@ -25,9 +25,9 @@ public class Executor {
         SyntaxStateMachine ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, ir.getTokensOfEachLine());
         ssm.syntaxHandler();
         if (ssm.isSyntaxOK()){
-            SemanticStateMachine semanticSM = new SemanticStateMachine(tokens);
-            semanticSM.semanticHandler();
-            if (semanticSM.isSemanticOk())
+//            SemanticStateMachine semanticSM = new SemanticStateMachine(tokens);
+//            semanticSM.semanticHandler();
+//            if (semanticSM.isSemanticOk())
                 cg = new CodeGenerator(tokens);
         }
     }
