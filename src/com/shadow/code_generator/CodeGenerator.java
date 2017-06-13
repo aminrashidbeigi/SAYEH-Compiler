@@ -22,6 +22,10 @@ public class CodeGenerator {
     private int Rd;
     private int Rs;
     private int ls;
+    private Stack<Integer> operandStack;
+    private Stack<Character> operatorStack;
+    private int numOfExpressions = 0;
+    private int lastValue;
 
     public CodeGenerator(ArrayList<String> tokens) {
         ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, new int[1]);
@@ -30,6 +34,8 @@ public class CodeGenerator {
         memory = new String[1024];
         variableInMemoryIndex = new HashMap();
         processingRegisters = new Stack<>();
+        operandStack = new Stack<>();
+        operatorStack = new Stack<>();
         Arrays.fill(R, 0);
         Arrays.fill(memory, "");
         Arrays.fill(isValidRegisterIndex, true);
@@ -64,7 +70,6 @@ public class CodeGenerator {
                 break;
             }
         }
-
     }
 
     private String lastVariable = "";
@@ -72,7 +77,6 @@ public class CodeGenerator {
     private void codeGeneratorStateHandler(int cs, String token){
         switch (cs){
             case 0 : {
-                processingRegisters.removeAllElements();
                 checkCodeToPrint(token, cs);
                 break;
             }
@@ -103,6 +107,10 @@ public class CodeGenerator {
                 break;
             }
 
+            case 10: {
+                checkCodeToPrint(token,cs);
+                break;
+            }
             case 11: {
                 checkCodeToPrint(token,cs);
                 break;
@@ -146,30 +154,44 @@ public class CodeGenerator {
     private void checkCodeToPrint(String token, int cs){
 
         if (cs == 0){
+
             if (ls == 11 || ls == 7 || ls == 4){
-                String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
+                calculate();
+                String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
                 int registerIndex = uselessRegisterIndexFinder();
                 Rd = registerIndex;
                 System.out.println("token: " + lastVariable);
                 System.out.println("R_" + registerIndex);
                 processingRegisters.push(registerIndex);
-
+                processingRegisters.removeAllElements();
                 mil(registerIndex, bits);
                 mih(registerIndex, bits);
                 sta();
             }
-        } else if (cs == 6 || cs == 9 || cs == 2) {
+            numOfExpressions = 0;
+        } else if (cs == 10) {
+//            if (ls == 11){
 
+                if (token.equals("(")) {
+                    operatorStack.push(token.charAt(0));
+                } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
+                    while (!operatorStack.empty() && hasPrecedence(token.charAt(0), operatorStack.peek()))
+                        operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
+                    operatorStack.push(token.charAt(0));
+                }
+                numOfExpressions++;
+//            }
         } else if (cs == 11){
-            int number = Integer.parseInt(token);
-            String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(number)).replace(" ","0");
-            int registerIndex = uselessRegisterIndexFinder();
-            Rs = registerIndex;
-            System.out.println("token: " + token);
-            System.out.println("R_" + registerIndex);
-            processingRegisters.push(registerIndex);
-            mil(registerIndex, bits);
-            mih(registerIndex, bits);
+            if (token.equals(")")){
+                while (operatorStack.peek() != '(')
+                    operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
+                operatorStack.pop();
+            }
+            else{
+                lastValue = Integer.parseInt(token);
+                operandStack.push(lastValue);
+            }
+            numOfExpressions++;
         } else if (cs == 4) {
             char[] chars = token.toCharArray();
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString((int)chars[1])).replace(" ","0");
@@ -218,9 +240,68 @@ public class CodeGenerator {
         isValidRegisterIndex[Rd] = true;
     }
 
-    private void add(int Rd, int Rs){
+    public int calculate() {
+        if (numOfExpressions == 1){
+            String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastValue)).replace(" ","0");
+            int registerIndex = uselessRegisterIndexFinder();
+            Rs = registerIndex;
+            System.out.println("token: " + lastValue);
+            System.out.println("R_" + registerIndex);
+            processingRegisters.push(registerIndex);
+            mil(registerIndex, bits);
+            mih(registerIndex, bits);
+
+        }
+        while (!operatorStack.empty())
+            operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
+        return operandStack.pop();
+    }
+
+    public static boolean hasPrecedence(char op1, char op2) {
+        if (op2 == '(' || op2 == ')')
+            return false;
+        if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-'))
+            return false;
+        else
+            return true;
+    }
+
+    public int applyOp(char op, int b, int a) {
+        switch (op) {
+            case '+':
+                String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
+                int registerIndex = uselessRegisterIndexFinder();
+                Rs = registerIndex;
+                System.out.println("token: " + a);
+                System.out.println("R_" + registerIndex);
+                processingRegisters.push(registerIndex);
+                mil(registerIndex, bits);
+                mih(registerIndex, bits);
+                bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
+                registerIndex = uselessRegisterIndexFinder();
+                Rd = registerIndex;
+                System.out.println("token: " + b);
+                System.out.println("R_" + registerIndex);
+                processingRegisters.push(registerIndex);
+                mil(registerIndex, bits);
+                mih(registerIndex, bits);
+                add();
+                return a + b;
+            case '-':
+                return a - b;
+            case '*':
+                return a * b;
+            case '/':
+                if (b == 0){
+                    return Integer.MAX_VALUE;
+                }
+                return a / b;
+        }
+        return 0;
+    }
+    private void add(){
         System.out.print("add : ");
-        System.out.print("1011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
+        System.out.println("1011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
         isValidRegisterIndex[Rs] = true;
         isValidRegisterIndex[Rd] = true;
     }
