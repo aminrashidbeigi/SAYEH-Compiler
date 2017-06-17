@@ -282,10 +282,45 @@ public class CodeGenerator {
                 }
 
                 add();
+                return Rd-1000;
+
+
+            case '-':
+                if (a < -995 && a > -1001) {
+                    a = a +1000;
+                    Rd = a;
+                    System.out.println("Rd to add" + Rd);
+                } else {
+                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
+                    registerIndex = uselessRegisterIndexFinder();
+                    Rd = registerIndex;
+                    System.out.println("token: " + a);
+                    System.out.println("R_" + registerIndex);
+                    processingRegisters.push(registerIndex);
+                    mil(registerIndex, bits);
+                    mih(registerIndex, bits);
+
+                }
+
+                if (b < -995 && b > -1001){
+                    b = b + 1000;
+                    Rs = b;
+                    System.out.println("Rs to add " + Rs);
+                } else {
+                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
+                    registerIndex = uselessRegisterIndexFinder();
+                    Rs = registerIndex;
+                    RsIndex = Rs;
+                    System.out.println("token: " + b);
+                    System.out.println("R_" + registerIndex);
+                    mil(registerIndex, bits);
+                    mih(registerIndex, bits);
+                    processingRegisters.push(registerIndex);
+                }
+
+                sub();
 
                 return Rd-1000;
-            case '-':
-                return a - b;
             case '*':
                 return a * b;
             case '/':
@@ -298,9 +333,27 @@ public class CodeGenerator {
     }
     private void add(){
         System.out.print("add : ");
+        if (Rd > Rs){
+            int temp = Rd;
+            Rd = Rs;
+            Rs = temp;
+        }
         System.out.println("1011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
         processingRegisters.pop();
         System.out.println(processingRegisters);
+    }
+
+    private void sub(){
+        System.out.print("sub : ");
+        if (Rd > Rs){
+            int temp = Rd;
+            Rd = Rs;
+            Rs = temp;
+        }
+        System.out.println("1100" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
+        processingRegisters.pop();
+        System.out.println(processingRegisters);
+
     }
 
 
@@ -323,8 +376,6 @@ public class CodeGenerator {
     private void sta(){
         System.out.print("sta : ");
         System.out.print("0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
-        isValidRegisterIndex[Rs] = true;
-        isValidRegisterIndex[Rd] = true;
     }
 
 
