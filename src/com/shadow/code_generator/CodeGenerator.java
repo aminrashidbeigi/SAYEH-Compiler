@@ -150,10 +150,18 @@ public class CodeGenerator {
         return index;
     }
 
+    private int registerIndexInStack(int R){
+        int index = 0;
+        for (int i = 0;i < processingRegisters.size(); i++){
+            if (processingRegisters.get(i) == R)
+                return i;
+        }
+        return -1;
+    }
+
     private void checkCodeToPrint(String token, int cs){
 
         if (cs == 0){
-
             if (ls == 11 || ls == 7 || ls == 4){
                 calculate();
                 String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
@@ -235,12 +243,28 @@ public class CodeGenerator {
     }
 
     public static boolean hasPrecedence(char op1, char op2) {
-        if (op2 == '(' || op2 == ')')
-            return false;
-        if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-'))
-            return false;
-        else
+        int o1 = precedenceNumber(op1);
+        int o2 = precedenceNumber(op2);
+
+        if(o1 > o2)
             return true;
+        else
+            return false;
+    }
+
+    private static int precedenceNumber(char c){
+        switch (c){
+            case '|' : return 0;
+            case '&' : return 1;
+            case '!' : return 2;
+            case '-' : return 3;
+            case '+' : return 3;
+            case '*' : return 4;
+            case '/' : return 4;
+            case '(' : return 5;
+            case ')' : return 5;
+        }
+        return -1;
     }
 
     private int RsIndex = 0;
@@ -299,7 +323,6 @@ public class CodeGenerator {
                     processingRegisters.push(registerIndex);
                     mil(registerIndex, bits);
                     mih(registerIndex, bits);
-
                 }
 
                 if (b < -995 && b > -1001){
@@ -339,7 +362,7 @@ public class CodeGenerator {
             Rs = temp;
         }
         System.out.println("1011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
-        processingRegisters.pop();
+        processingRegisters.remove(registerIndexInStack(Rs));
         System.out.println(processingRegisters);
     }
 
@@ -352,10 +375,13 @@ public class CodeGenerator {
         }
         System.out.println("1100" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
         processingRegisters.pop();
+        if (registerIndexInStack(Rs) > 0){
+            processingRegisters.remove(registerIndexInStack(Rs));
+        } else {
+            System.out.println(processingRegisters);
+        }
         System.out.println(processingRegisters);
-
     }
-
 
     private void mil(int registerIndex, String bits){
         System.out.print("mil : ");
@@ -392,6 +418,5 @@ public class CodeGenerator {
         }
         return "00";
     }
-
 
 }
