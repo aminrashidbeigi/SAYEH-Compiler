@@ -52,10 +52,19 @@ public class CodeGenerator {
             if (token.equals(";")) scs = 0;
             if (scs == 14 || scs == 15 || scs == 7){
                 key = ssm.expressionKeywordValueGenerator(token);
-                ecs = ExpressionTransitionTable.ett[ecs][key];
+                if (!token.equals("{"))
+                    ecs = ExpressionTransitionTable.ett[ecs][key];
+                if (token.equals("{") ){
+                    scs = 0;
+                    continue;
+                }
                 expressionCodeGeneratorHandler(ecs, token);
             } else {
                 key = ssm.statementKeywordValueGenerator(token);
+                if (token.equals("}") ){
+                    scs = 0;
+                    continue;
+                }
                 scs = stt.stt[scs][key];
                 if (scs == -8 && ls == 10 && key == 12) scs = 4;
                 codeGeneratorStateHandler(scs, token);
@@ -118,6 +127,8 @@ public class CodeGenerator {
             }
 
             case 12: {
+                checkCodeToPrint(token,cs);
+                memoryFiller(token);
                 lastVariable = token;
             }
 
@@ -186,7 +197,8 @@ public class CodeGenerator {
                         operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
                     operatorStack.push(token.charAt(0));
                 }
-                numOfExpressions++;
+                if (!token.equals("="))
+                    numOfExpressions++;
 //            }
         } else if (cs == 11){
             if (token.equals(")")){
