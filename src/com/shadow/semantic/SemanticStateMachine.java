@@ -29,8 +29,6 @@ public class SemanticStateMachine {
         int tokenCounter = 0;
         String lastVariable = "";
         String afterEqString = "";
-        boolean commentStarts = false;
-        int commentType = 0;
         boolean isNewLine = false;
         String lastToken = "";
         boolean isNegativeValue = false;
@@ -40,11 +38,7 @@ public class SemanticStateMachine {
         int parenthesis = 0;
         for (String token : tokens){
             tokenCounter++;
-            if (token.equals("/*") || token.equals("//")){
-                if (token.equals("/*")) commentType = 1;
-                else if (token.equals("//")) commentType = 2;
-                commentStarts = true;
-            } else if (isKeyword(token)){
+            if (isKeyword(token)){
                 if (token.equals("if") || token.equals("while")){
                     isExpression = true;
                 }
@@ -56,11 +50,6 @@ public class SemanticStateMachine {
                 if (parenthesis == 0){
                     isExpression = false;
                 }
-            }
-            if (commentStarts){
-                if ((commentType == 2 && isNewLine) || token.equals("*/"))
-                    commentStarts = false;
-                continue;
             }
             key = semanticKeyValueGenerator(token);
             if (key == 0)

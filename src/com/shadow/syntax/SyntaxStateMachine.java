@@ -153,8 +153,6 @@ public class SyntaxStateMachine {
         else if (string.equals("+=") || string.equals("-=") || string.equals("*=") ||
                  string.equals("/=") || string.equals("%=")) return 13;
         else if (string.equals("++") || string.equals("--")) return 16;
-        else if (string.equals("/*")) return 18;
-        else if (string.equals("*/")) return 19;
         else if (string.equals("{")) return 50; // is not in state machine
         else if (string.equals("}")) return 51; // is not in state machine
         return -1;
