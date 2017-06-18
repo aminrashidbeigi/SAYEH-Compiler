@@ -163,7 +163,7 @@ public class CodeGenerator {
 
         if (cs == 0){
             if (ls == 11 || ls == 7 || ls == 4){
-                calculate();
+                if (ls == 11) calculate();
                 String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
                 int registerIndex = uselessRegisterIndexFinder();
                 Rd = registerIndex;
@@ -178,7 +178,6 @@ public class CodeGenerator {
             numOfExpressions = 0;
         } else if (cs == 10) {
 //            if (ls == 11){
-
                 if (token.equals("(")) {
                     operatorStack.push(token.charAt(0));
                 } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
@@ -207,6 +206,7 @@ public class CodeGenerator {
             System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
+            lastValue = (int)token.charAt(1);
             mil(registerIndex, bits);
             mih(registerIndex, bits);
         } else if (token.equals("true") || token.equals("false")){
@@ -400,6 +400,11 @@ public class CodeGenerator {
     }
 
     private void sta(){
+        if (Rd > Rs){
+            int temp = Rd;
+            Rd = Rs;
+            Rs = temp;
+        }
         System.out.print("sta : ");
         System.out.print("0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
     }

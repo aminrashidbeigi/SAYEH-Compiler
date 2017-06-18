@@ -89,6 +89,7 @@ public class SyntaxStateMachine {
         return cs;
     }
 
+    private boolean isParenthesis = false;
     public int expressionHandler(String string, int cs){
         int key = expressionKeywordValueGenerator(string);
         if (string.equals(";") && isBoolExpression){
@@ -100,6 +101,7 @@ public class SyntaxStateMachine {
             System.out.println(string + " : invalid token.\n");
             return -100;
         } else if (key == 0){
+            isParenthesis = true;
             parenthesis++;
         } else if (key == 1){
             parenthesis--;
@@ -109,8 +111,9 @@ public class SyntaxStateMachine {
                 oneTime = true;
                 return 0;
             }
-        } else if (parenthesis == 0){
+        } else if (parenthesis == 0 && isParenthesis){
             scs = 0;
+            isParenthesis = false;
             return 0;
         }
         if (cs >= 0 && cs != 15 && cs != 14)
