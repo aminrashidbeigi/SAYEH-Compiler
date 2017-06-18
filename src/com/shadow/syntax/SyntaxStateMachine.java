@@ -19,6 +19,8 @@ public class SyntaxStateMachine {
     private int[] tokensOfEachLine;
     private boolean isBoolExpression = false;
     private int lineCounter =  0;
+    private int ls = 0;
+
     public SyntaxStateMachine(int[][] statementTransitionTable, int[][] expressionTransitionTable,
                               ArrayList<String> tokens, int[] tokensOfEachLine) {
         this.statementTransitionTable = statementTransitionTable;
@@ -51,6 +53,7 @@ public class SyntaxStateMachine {
                 syntaxIsOK = true;
                 System.out.println("Syntax is OK :)");
             }
+            ls = scs;
         }
     }
 
@@ -77,6 +80,10 @@ public class SyntaxStateMachine {
             } else{
                 cs = statementTransitionTable[cs][key];
             }
+        }
+        if (cs == -8 && ls == 10){
+            if (key == 12)
+                cs = 4;
         }
         if (key == 8){
             afterEq = true;

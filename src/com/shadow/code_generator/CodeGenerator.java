@@ -57,6 +57,7 @@ public class CodeGenerator {
             } else {
                 key = ssm.statementKeywordValueGenerator(token);
                 scs = stt.stt[scs][key];
+                if (scs == -8 && ls == 10 && key == 12) scs = 4;
                 codeGeneratorStateHandler(scs, token);
             }
             ls = scs;
@@ -194,7 +195,9 @@ public class CodeGenerator {
                 operatorStack.pop();
             }
             else{
-                lastValue = Integer.parseInt(token);
+                if (token.equals("true"))lastValue = 1;
+                else if (token.equals("false")) lastValue = 0;
+                else lastValue = Integer.parseInt(token);
                 operandStack.push(lastValue);
             }
             numOfExpressions++;
