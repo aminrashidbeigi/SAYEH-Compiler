@@ -360,7 +360,38 @@ public class CodeGenerator {
 
                 return Rd-1000;
             case '*':
-                return a * b;
+                if (a < -995 && a > -1001) {
+                    a = a +1000;
+                    Rd = a;
+                    System.out.println("Rd to add" + Rd);
+                } else {
+                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
+                    registerIndex = uselessRegisterIndexFinder();
+                    Rd = registerIndex;
+                    System.out.println("token: " + a);
+                    System.out.println("R_" + registerIndex);
+                    processingRegisters.push(registerIndex);
+                    mil(registerIndex, bits);
+                    mih(registerIndex, bits);
+                }
+
+                if (b < -995 && b > -1001){
+                    b = b + 1000;
+                    Rs = b;
+                    System.out.println("Rs to add " + Rs);
+                } else {
+                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
+                    registerIndex = uselessRegisterIndexFinder();
+                    Rs = registerIndex;
+                    RsIndex = Rs;
+                    System.out.println("token: " + b);
+                    System.out.println("R_" + registerIndex);
+                    mil(registerIndex, bits);
+                    mih(registerIndex, bits);
+                    processingRegisters.push(registerIndex);
+                }
+                mul();
+                return Rd - 1000;
             case '/':
                 if (b == 0){
                     return Integer.MAX_VALUE;
@@ -389,13 +420,22 @@ public class CodeGenerator {
             Rs = temp;
         }
         System.out.println("1100" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
-        processingRegisters.pop();
         if (registerIndexInStack(Rs) > 0){
             processingRegisters.remove(registerIndexInStack(Rs));
-        } else {
-            System.out.println(processingRegisters);
         }
-        System.out.println(processingRegisters);
+    }
+
+    private void mul(){
+        System.out.print("mul : ");
+        if (Rd > Rs){
+            int temp = Rd;
+            Rd = Rs;
+            Rs = temp;
+        }
+        System.out.println("1101" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
+        if (registerIndexInStack(Rs) > 0){
+            processingRegisters.remove(registerIndexInStack(Rs));
+        }
     }
 
     private void mil(int registerIndex, String bits){
