@@ -26,6 +26,7 @@ public class CodeGenerator {
     private Stack<Character> operatorStack;
     private int numOfExpressions = 0;
     private int lastValue;
+    private Map<String, Integer> variableMemoryPosition;
 
     public CodeGenerator(ArrayList<String> tokens) {
         ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, new int[1]);
@@ -36,11 +37,11 @@ public class CodeGenerator {
         processingRegisters = new Stack<>();
         operandStack = new Stack<>();
         operatorStack = new Stack<>();
+        variableMemoryPosition = new HashMap<>();
         Arrays.fill(R, 0);
         Arrays.fill(memory, "");
         Arrays.fill(isValidRegisterIndex, true);
         codeGeneratorStateMachine(tokens);
-
     }
 
     private int scs = 0;
@@ -58,7 +59,7 @@ public class CodeGenerator {
                     scs = 0;
                     continue;
                 }
-                expressionCodeGeneratorHandler(ecs, token);
+                expressionCodeGeneratorHandler(ecs, token, key);
             } else {
                 key = ssm.statementKeywordValueGenerator(token);
                 if (token.equals("}") ){
@@ -67,16 +68,16 @@ public class CodeGenerator {
                 }
                 scs = stt.stt[scs][key];
                 if (scs == -8 && ls == 10 && key == 12) scs = 4;
-                codeGeneratorStateHandler(scs, token);
+                codeGeneratorStateHandler(scs, token, key);
             }
             ls = scs;
         }
     }
 
-    private void expressionCodeGeneratorHandler(int cs, String token){
+    private void expressionCodeGeneratorHandler(int cs, String token, int key){
         switch (cs){
             case 1 : {
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 break;
             }
         }
@@ -84,50 +85,50 @@ public class CodeGenerator {
 
     private String lastVariable = "";
 
-    private void codeGeneratorStateHandler(int cs, String token){
+    private void codeGeneratorStateHandler(int cs, String token, int key){
         switch (cs){
             case 0 : {
-                checkCodeToPrint(token, cs);
+                checkCodeToPrint(token, cs, key);
                 break;
             }
 
             case 2 : {
                 lastVariable = token;
                 memoryFiller(token);
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 break;
             }
 
             case 4 : {
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 break;
             }
 
             case 6 : {
                 lastVariable = token;
                 memoryFiller(token);
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 break;
             }
 
             case 9 : {
                 lastVariable = token;
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 memoryFiller(token);
                 break;
             }
 
             case 10: {
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 break;
             }
             case 11: {
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 break;
             }
 
             case 12: {
-                checkCodeToPrint(token,cs);
+                checkCodeToPrint(token,cs, key);
                 memoryFiller(token);
                 lastVariable = token;
             }
@@ -148,7 +149,7 @@ public class CodeGenerator {
 
         lastUsedMemoryWord = lastEmptyMemoryWordIndex;
         System.out.println(data + " --> " + lastEmptyMemoryWordIndex);
-        variableInMemoryIndex.put(data, lastEmptyMemoryWordIndex);
+        variableMemoryPosition.put(data, lastEmptyMemoryWordIndex);
         memory[lastEmptyMemoryWordIndex] = data;
     }
 
@@ -171,7 +172,7 @@ public class CodeGenerator {
         return -1;
     }
 
-    private void checkCodeToPrint(String token, int cs){
+    private void checkCodeToPrint(String token, int cs, int key){
 
         if (cs == 0){
             if (ls == 11 || ls == 7 || ls == 4){
@@ -179,6 +180,7 @@ public class CodeGenerator {
                 String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(lastUsedMemoryWord)).replace(" ","0");
                 int registerIndex = uselessRegisterIndexFinder();
                 Rd = registerIndex;
+                variableRegister = registerIndex;
                 System.out.println("token: " + lastVariable);
                 System.out.println("R_" + registerIndex);
                 processingRegisters.push(registerIndex);
@@ -209,7 +211,11 @@ public class CodeGenerator {
             else{
                 if (token.equals("true"))lastValue = 1;
                 else if (token.equals("false")) lastValue = 0;
-                else lastValue = Integer.parseInt(token);
+                else if (key == 17) lastValue = Integer.parseInt(token);
+                else {
+//                    lda(token)
+
+                }
                 operandStack.push(lastValue);
             }
             numOfExpressions++;
@@ -239,6 +245,7 @@ public class CodeGenerator {
         }
     }
 
+    private int variableRegister = 0;
 
     public int calculate() {
         if (numOfExpressions == 1){
@@ -250,7 +257,6 @@ public class CodeGenerator {
             processingRegisters.push(registerIndex);
             mil(registerIndex, bits);
             mih(registerIndex, bits);
-
         }
         while (!operatorStack.empty())
             operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
@@ -261,7 +267,7 @@ public class CodeGenerator {
         int o1 = precedenceNumber(op1);
         int o2 = precedenceNumber(op2);
 
-        if(o1 > o2)
+        if(o1 < o2 || o1 == -1)
             return true;
         else
             return false;
@@ -276,7 +282,7 @@ public class CodeGenerator {
             case '+' : return 3;
             case '*' : return 4;
             case '/' : return 4;
-            case '(' : return 5;
+            case '(' : return -1;
             case ')' : return 5;
         }
         return -1;
@@ -284,114 +290,113 @@ public class CodeGenerator {
 
     private int RsIndex = 0;
     public int applyOp(char op, int b, int a) {
+        String bits;
+        int registerIndex1 = 0;
+        int registerIndex2 = 0;
         switch (op) {
             case '+':
-                String bits;
-                int registerIndex;
                 if (a < -995 && a > -1001) {
-                    a = a +1000;
-                    Rd = a;
-                    System.out.println("Rd to add" + Rd);
+                    a = a + 1000;
+                    registerIndex1 = a;
+                    System.out.println("Rd to add : " + registerIndex1);
                 } else {
                     bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
-                    registerIndex = uselessRegisterIndexFinder();
-                    Rd = registerIndex;
+                    registerIndex1 = uselessRegisterIndexFinder();
+//                    Rs = registerIndex;
                     System.out.println("token: " + a);
-                    System.out.println("R_" + registerIndex);
-                    processingRegisters.push(registerIndex);
-                    mil(registerIndex, bits);
-                    mih(registerIndex, bits);
-
+                    System.out.println("R_" + registerIndex1);
+                    processingRegisters.push(registerIndex1);
+                    mil(registerIndex1, bits);
+                    mih(registerIndex1, bits);
                 }
 
                 if (b < -995 && b > -1001){
                     b = b + 1000;
-                    Rs = b;
-                    System.out.println("Rs to add " + Rs);
+                    registerIndex2 = b;
+                    System.out.println("Rs to add : " + registerIndex2);
                 } else {
                     bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
-                    registerIndex = uselessRegisterIndexFinder();
-                    Rs = registerIndex;
-                    RsIndex = Rs;
+                    registerIndex2 = uselessRegisterIndexFinder();
+//                    Rs = registerIndex;
+//                    RsIndex = Rs;
                     System.out.println("token: " + b);
-                    System.out.println("R_" + registerIndex);
-                    mil(registerIndex, bits);
-                    mih(registerIndex, bits);
-                    processingRegisters.push(registerIndex);
+                    System.out.println("R_" + registerIndex2);
+                    mil(registerIndex2, bits);
+                    mih(registerIndex2, bits);
+                    processingRegisters.push(registerIndex2);
                 }
 
-                add();
-                return Rd-1000;
-
+                add(registerIndex1, registerIndex2);
+                return registerIndex1-1000;
 
             case '-':
                 if (a < -995 && a > -1001) {
                     a = a +1000;
-                    Rd = a;
-                    System.out.println("Rd to add" + Rd);
+                    registerIndex1 = a;
+                    System.out.println("Rd to sub : " + registerIndex1);
                 } else {
                     bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
-                    registerIndex = uselessRegisterIndexFinder();
-                    Rd = registerIndex;
+                    registerIndex1 = uselessRegisterIndexFinder();
+//                    Rd = registerIndex;
                     System.out.println("token: " + a);
-                    System.out.println("R_" + registerIndex);
-                    processingRegisters.push(registerIndex);
-                    mil(registerIndex, bits);
-                    mih(registerIndex, bits);
+                    System.out.println("R_" + registerIndex1);
+                    processingRegisters.push(registerIndex1);
+                    mil(registerIndex1, bits);
+                    mih(registerIndex1, bits);
                 }
 
                 if (b < -995 && b > -1001){
                     b = b + 1000;
-                    Rs = b;
-                    System.out.println("Rs to add " + Rs);
+                    registerIndex2 = b;
+                    System.out.println("Rs to sub : " + registerIndex2);
                 } else {
                     bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
-                    registerIndex = uselessRegisterIndexFinder();
-                    Rs = registerIndex;
+                    registerIndex2 = uselessRegisterIndexFinder();
+//                    Rs = registerIndex;
                     RsIndex = Rs;
                     System.out.println("token: " + b);
-                    System.out.println("R_" + registerIndex);
-                    mil(registerIndex, bits);
-                    mih(registerIndex, bits);
-                    processingRegisters.push(registerIndex);
+                    System.out.println("R_" + registerIndex2);
+                    mil(registerIndex2, bits);
+                    mih(registerIndex2, bits);
+                    processingRegisters.push(registerIndex2);
                 }
 
-                sub();
+                sub(registerIndex1, registerIndex2);
 
-                return Rd-1000;
+                return registerIndex1-1000;
             case '*':
                 if (a < -995 && a > -1001) {
                     a = a +1000;
-                    Rd = a;
-                    System.out.println("Rd to add" + Rd);
+                    registerIndex1 = a;
+                    System.out.println("Rd to mul : " + registerIndex1);
                 } else {
                     bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
-                    registerIndex = uselessRegisterIndexFinder();
-                    Rd = registerIndex;
+                    registerIndex1 = uselessRegisterIndexFinder();
+//                    Rd = registerIndex;
                     System.out.println("token: " + a);
-                    System.out.println("R_" + registerIndex);
-                    processingRegisters.push(registerIndex);
-                    mil(registerIndex, bits);
-                    mih(registerIndex, bits);
+                    System.out.println("R_" + registerIndex1);
+                    processingRegisters.push(registerIndex1);
+                    mil(registerIndex1, bits);
+                    mih(registerIndex1, bits);
                 }
 
                 if (b < -995 && b > -1001){
                     b = b + 1000;
-                    Rs = b;
-                    System.out.println("Rs to add " + Rs);
+                    registerIndex2 = b;
+                    System.out.println("Rs to mul : " + registerIndex2);
                 } else {
                     bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
-                    registerIndex = uselessRegisterIndexFinder();
-                    Rs = registerIndex;
+                    registerIndex2 = uselessRegisterIndexFinder();
+//                    Rs = registerIndex;
                     RsIndex = Rs;
                     System.out.println("token: " + b);
-                    System.out.println("R_" + registerIndex);
-                    mil(registerIndex, bits);
-                    mih(registerIndex, bits);
-                    processingRegisters.push(registerIndex);
+                    System.out.println("R_" + registerIndex2);
+                    processingRegisters.push(registerIndex2);
+                    mil(registerIndex2, bits);
+                    mih(registerIndex2, bits);
                 }
-                mul();
-                return Rd - 1000;
+                mul(registerIndex1, registerIndex2);
+                return registerIndex1 - 1000;
             case '/':
                 if (b == 0){
                     return Integer.MAX_VALUE;
@@ -400,41 +405,44 @@ public class CodeGenerator {
         }
         return 0;
     }
-    private void add(){
+    private void add(int Rdd, int Rss){
         System.out.print("add : ");
-        if (Rd > Rs){
-            int temp = Rd;
-            Rd = Rs;
-            Rs = temp;
+        if (Rdd > Rss){
+            int temp = Rdd;
+            Rdd = Rss;
+            Rss = temp;
         }
-        System.out.println("1011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
-        processingRegisters.remove(registerIndexInStack(Rs));
+        Rs = Rdd;
+        System.out.println("1011" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        processingRegisters.remove(registerIndexInStack(Rss));
         System.out.println(processingRegisters);
     }
 
-    private void sub(){
+    private void sub(int Rdd, int Rss){
         System.out.print("sub : ");
-        if (Rd > Rs){
-            int temp = Rd;
-            Rd = Rs;
-            Rs = temp;
+        if (Rdd > Rss){
+            int temp = Rdd;
+            Rdd = Rss;
+            Rss = temp;
         }
-        System.out.println("1100" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
-        if (registerIndexInStack(Rs) > 0){
-            processingRegisters.remove(registerIndexInStack(Rs));
+        Rs = Rdd;
+        System.out.println("1100" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        if (registerIndexInStack(Rss) > 0){
+            processingRegisters.remove(registerIndexInStack(Rss));
         }
     }
 
-    private void mul(){
+    private void mul(int Rdd, int Rss){
         System.out.print("mul : ");
-        if (Rd > Rs){
-            int temp = Rd;
-            Rd = Rs;
-            Rs = temp;
+        if (Rdd > Rss){
+            int temp = Rdd;
+            Rdd = Rss;
+            Rss = temp;
         }
-        System.out.println("1101" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
-        if (registerIndexInStack(Rs) > 0){
-            processingRegisters.remove(registerIndexInStack(Rs));
+        Rs = Rdd;
+        System.out.println("1101" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        if (registerIndexInStack(Rss) > 0){
+            processingRegisters.remove(registerIndexInStack(Rss));
         }
     }
 
@@ -455,14 +463,24 @@ public class CodeGenerator {
     }
 
     private void sta(){
-        if (Rd > Rs){
+        if (Rd > Rs && Rd != variableRegister){
             int temp = Rd;
             Rd = Rs;
             Rs = temp;
         }
-        System.out.print("sta : ");
-        System.out.print("0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
+        System.out.print("sta : " + "0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000\n");
+        System.out.print("mvr : " + "0001" + binaryRegisterIndex(Rs) + binaryRegisterIndex(Rd) + "00000000\n");
     }
+
+//    private void lda(){
+//        if (Rd > Rs && Rd != variableRegister){
+//            int temp = Rd;
+//            Rd = Rs;
+//            Rs = temp;
+//        }
+//        System.out.print("sta : " + "0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000\n");
+//        System.out.print("mvr : " + "0001" + binaryRegisterIndex(Rs) + binaryRegisterIndex(Rd) + "00000000\n");
+//    }
 
 
     private String binaryRegisterIndex(int number){

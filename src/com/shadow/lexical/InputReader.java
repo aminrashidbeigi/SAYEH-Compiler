@@ -75,9 +75,6 @@ public class InputReader {
                 wordCounterOfEachLine++;
 
             }
-            System.out.println(tempTokens);
-
-
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
