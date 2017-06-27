@@ -168,7 +168,7 @@ public class SyntaxStateMachine {
         }
         else if (token.equals("'")) return 4;
         else if (token.equals("||") || token.equals("&&")) return 5;
-        else if (token.equals("==") || token.equals(">=") || token.equals("<=") ||
+        else if (token.equals("==") || token.equals("!=") || token.equals(">=") || token.equals("<=") ||
                  token.equals("<") || token.equals(">")) return 6;
         else if (token.equals("+") || token.equals("-") || token.equals("*") ||
                  token.equals("%") || token.equals("/")) return 8;
