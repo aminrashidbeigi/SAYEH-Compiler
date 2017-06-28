@@ -89,14 +89,37 @@ public class CodeGenerator {
 
     private void expressionCodeGeneratorHandler(int cs, String token, int key){
         switch (cs){
+            case 8:
             case 1:
-                if (token.equals("true"))
+                if (token.equals(")")){
+                    if (!operatorStack.contains('('))
+                        break;
+                    while (operatorStack.peek() != '(')
+                        operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
+                    operatorStack.pop();
+                } else if (token.equals("true")){
+                    String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(1)).replace(" ","0");
+                    int registerIndex = uselessRegisterIndexFinder();
+                    System.out.println("token: " + token);
+                    System.out.println("R_" + registerIndex);
+                    processingRegisters.push(registerIndex);
+                    mil(registerIndex, bits);
+                    mih(registerIndex, bits);
                     operandStack.push(1);
-                else if (token.equals("false"))
+                }
+                else if (token.equals("false")){
+                    String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(0)).replace(" ","0");
+                    int registerIndex = uselessRegisterIndexFinder();
+                    System.out.println("token: " + token);
+                    System.out.println("R_" + registerIndex);
+                    processingRegisters.push(registerIndex);
+                    mil(registerIndex, bits);
+                    mih(registerIndex, bits);
                     operandStack.push(0);
-                operatorStack.push(token.charAt(0));
+                }
                 break;
 
+            case 6:
             case 2:
                 if (token.equals(")")){
                     while (operatorStack.peek() != '(')
@@ -121,6 +144,7 @@ public class CodeGenerator {
                 }
                 break;
 
+            case 7:
             case 3:
                 if (token.equals(")")){
                     while (operatorStack.peek() != '(')
@@ -153,52 +177,6 @@ public class CodeGenerator {
                 lastComparisonOperation = token;
                 calculate();
                 leftExpressionRegister = Rs;
-                break;
-
-            case 6:
-                if (token.equals(")")){
-                    if (!operatorStack.contains('('))
-                        break;
-                    while (operatorStack.peek() != '(')
-                        operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
-                    operatorStack.pop();
-                }
-                else{
-                    if (key == 3){
-                        lastValue = Integer.parseInt(token);
-                        operandStack.push(lastValue);
-                    }
-                    else {
-                        int memoryAddressForLoad = uselessRegisterIndexFinder();
-                        String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(variableMemoryPosition.get(token))).replace(" ","0");
-                        processingRegisters.push(memoryAddressForLoad);
-                        mil(memoryAddressForLoad, bits);
-                        mih(memoryAddressForLoad, bits);
-                        int loadedRegister = uselessRegisterIndexFinder();
-                        lda(loadedRegister, memoryAddressForLoad);
-                        operandStack.push(memoryAddressForLoad - 1000);
-                    }
-                }
-                break;
-
-            case 7:
-                if (token.equals(")")){
-                    if (operatorStack.isEmpty())
-                        break;
-                    while (operatorStack.peek() != '(')
-                        operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
-                    operatorStack.pop();
-                }
-                else{
-                    int memoryAddressForLoad = uselessRegisterIndexFinder();
-                    String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(variableMemoryPosition.get(token))).replace(" ","0");
-                    processingRegisters.push(memoryAddressForLoad);
-                    mil(memoryAddressForLoad, bits);
-                    mih(memoryAddressForLoad, bits);
-                    int loadedRegister = uselessRegisterIndexFinder();
-                    lda(loadedRegister, memoryAddressForLoad);
-                    operandStack.push(memoryAddressForLoad - 1000);
-                }
                 break;
 
             case 9:
