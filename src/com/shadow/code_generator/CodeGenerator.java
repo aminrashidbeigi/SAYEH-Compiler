@@ -31,7 +31,7 @@ public class CodeGenerator {
     private int leftExpressionRegister = 0;
     private int rightExpressionRegister = 0;
     private String lastComparisonOperation = "";
-
+    private Stack<Integer> parenthesisStack;
 
     public CodeGenerator(ArrayList<String> tokens) {
         ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, new int[1]);
@@ -42,6 +42,7 @@ public class CodeGenerator {
         processingRegisters = new Stack<>();
         operandStack = new Stack<>();
         operatorStack = new Stack<>();
+        parenthesisStack = new Stack<>();
         variableMemoryPosition = new HashMap<>();
         Arrays.fill(R, 0);
         Arrays.fill(memory, "");
@@ -56,11 +57,15 @@ public class CodeGenerator {
         for (String token : tokens){
             int key;
             if (token.equals(";")) scs = 0;
+            if (token.equals("("))
+                parenthesisStack.push(1);
+            else if (token.equals(")"))
+                parenthesisStack.pop();
             if (scs == 14 || scs == 15 || scs == 7){
                 key = ssm.expressionKeywordValueGenerator(token);
                 if (!token.equals("{"))
                     ecs = ExpressionTransitionTable.ett[ecs][key];
-                if (token.equals("{") ){
+                if (parenthesisStack.isEmpty()){
                     calculate();
                     rightExpressionRegister = Rs;
                     compare(lastComparisonOperation ,leftExpressionRegister ,rightExpressionRegister);
