@@ -23,7 +23,7 @@ public class CodeGenerator {
     private int Rs;
     private int ls;
     private Stack<Integer> operandStack;
-    private Stack<Character> operatorStack;
+    private Stack<String> operatorStack;
     private int numOfExpressions = 0;
     private int lastValue;
     private Map<String, Integer> variableMemoryPosition;
@@ -67,8 +67,6 @@ public class CodeGenerator {
                     ecs = ExpressionTransitionTable.ett[ecs][key];
                 if (parenthesisStack.isEmpty()){
                     calculate();
-                    rightExpressionRegister = Rs;
-                    compare(lastComparisonOperation ,leftExpressionRegister ,rightExpressionRegister);
                     scs = 0;
                     continue;
                 }
@@ -94,7 +92,7 @@ public class CodeGenerator {
                 if (token.equals(")")){
                     if (!operatorStack.contains('('))
                         break;
-                    while (operatorStack.peek() != '(')
+                    while (!operatorStack.peek().equals("("))
                         operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
                     operatorStack.pop();
                 } else if (token.equals("true")){
@@ -122,7 +120,7 @@ public class CodeGenerator {
             case 6:
             case 2:
                 if (token.equals(")")){
-                    while (operatorStack.peek() != '(')
+                    while (!operatorStack.peek().equals("("))
                         operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
                     operatorStack.pop();
                 }
@@ -147,7 +145,7 @@ public class CodeGenerator {
             case 7:
             case 3:
                 if (token.equals(")")){
-                    while (operatorStack.peek() != '(')
+                    while (operatorStack.peek().equals("("))
                         operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
                     operatorStack.pop();
                 }
@@ -163,29 +161,26 @@ public class CodeGenerator {
                 }
                 break;
 
+            case 5:
             case 4:
                 if (token.equals("(")) {
-                    operatorStack.push(token.charAt(0));
-                } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
-                    while (!operatorStack.empty() && hasPrecedence(token.charAt(0), operatorStack.peek()))
+                    operatorStack.push(token);
+                } else if (token.equals(">") || token.equals("<") || token.equals("==") || token.equals("!=") ||
+                        token.equals(">=") || token.equals("<=") || token.equals("+") || token.equals("-") ||
+                        token.equals("*") || token.equals("/")) {
+                    while (!operatorStack.empty() && hasPrecedence(token, operatorStack.peek()))
                         operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
-                    operatorStack.push(token.charAt(0));
+                    operatorStack.push(token);
                 }
-                break;
-
-            case 5:
-                lastComparisonOperation = token;
-                calculate();
-                leftExpressionRegister = Rs;
                 break;
 
             case 9:
                 if (token.equals("(")) {
-                    operatorStack.push(token.charAt(0));
+                    operatorStack.push(token);
                 } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
-                    while (!operatorStack.empty() && hasPrecedence(token.charAt(0), operatorStack.peek()))
+                    while (!operatorStack.empty() && hasPrecedence(token, operatorStack.peek()))
                         operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
-                    operatorStack.push(token.charAt(0));
+                    operatorStack.push(token);
                 }
                 break;
 
@@ -306,17 +301,17 @@ public class CodeGenerator {
             numOfExpressions = 0;
         } else if (cs == 10) {
             if (token.equals("(")) {
-                operatorStack.push(token.charAt(0));
+                operatorStack.push(token);
             } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
-                while (!operatorStack.empty() && hasPrecedence(token.charAt(0), operatorStack.peek()))
+                while (!operatorStack.empty() && hasPrecedence(token, operatorStack.peek()))
                     operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
-                operatorStack.push(token.charAt(0));
+                operatorStack.push(token);
             }
             if (!token.equals("="))
                 numOfExpressions++;
         } else if (cs == 11){
             if (token.equals(")")){
-                while (operatorStack.peek() != '(')
+                while (operatorStack.peek().equals("("))
                     operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
                 operatorStack.pop();
             }
@@ -411,27 +406,8 @@ public class CodeGenerator {
         return operandStack.pop();
     }
 
-    private void compare(String operation , int left,int right){
-        switch (operation){
-            case ">" :
-                cmp(left, right);
-                break;
-            case "<" :
-                break;
-            case "==":
-                break;
-            case "!=":
-                cmp(left, right);
-                brz();
-                break;
-            default:
-                break;
-        }
 
-    }
-
-
-    public static boolean hasPrecedence(char op1, char op2) {
+    public static boolean hasPrecedence(String op1, String op2) {
         int o1 = precedenceNumber(op1);
         int o2 = precedenceNumber(op2);
 
@@ -441,155 +417,108 @@ public class CodeGenerator {
             return false;
     }
 
-    private static int precedenceNumber(char c){
-        switch (c){
-            case '|' : return 0;
-            case '&' : return 1;
-            case '!' : return 2;
-            case '-' : return 3;
-            case '+' : return 3;
-            case '*' : return 4;
-            case '/' : return 4;
-            case '(' : return -1;
-            case ')' : return 5;
+    private static int precedenceNumber(String s){
+        switch (s){
+            case "|" : return 0;
+            case "&" : return 1;
+            case "!" : return 2;
+            case ">" : return 2;
+            case "<" : return 2;
+            case "<=" : return 2;
+            case ">=" : return 2;
+            case "==" : return 2;
+            case "!=" : return 2;
+            case "-" : return 4;
+            case "+" : return 4;
+            case "*" : return 5;
+            case "/" : return 5;
+            case "(" : return -1;
+            case ")" : return 6;
         }
         return -1;
     }
 
-    public int applyOp(char op, int b, int a) {
+    public int applyOp(String op, int b, int a) {
+        int [] registers = new int[2];
+        switch (op) {
+
+            case "+":
+                registers = addToRegisters(a,b);
+                add(registers[0], registers[1]);
+                return registers[0]-1000;
+
+            case "-":
+                registers = addToRegisters(a,b);
+                sub(registers[0], registers[1]);
+                return registers[0]-1000;
+
+            case "*":
+                registers = addToRegisters(a,b);
+                mul(registers[0], registers[1]);
+                return registers[0]-1000;
+
+            case ">":
+                registers = addToRegisters(a,b);
+                cmp(registers[1], registers[0]);
+                brc(2);
+
+                String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(1)).replace(" ","0");
+                int registerIndex1 = uselessRegisterIndexFinder();
+                processingRegisters.push(registerIndex1);
+                mil(registerIndex1, bits);
+                mih(registerIndex1, bits);
+
+                bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(0)).replace(" ","0");
+                registerIndex1 = uselessRegisterIndexFinder();
+                processingRegisters.push(registerIndex1);
+                mil(registerIndex1, bits);
+                mih(registerIndex1, bits);
+
+                return registers[0]-1000;
+
+            case "|":
+                registers = addToRegisters(a,b);
+                orr(registers[0], registers[1]);
+                return registers[0]-1000;
+        }
+        return 0;
+    }
+
+    private int[] addToRegisters(int a, int b){
+        int [] registers = new int[2];
         String bits;
         int registerIndex1 = 0;
         int registerIndex2 = 0;
-        switch (op) {
-            case '+':
-                if (a < -995 && a > -1001) {
-                    a = a + 1000;
-                    registerIndex1 = a;
-                    System.out.println("Rd to add : " + registerIndex1);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
-                    registerIndex1 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + a);
-                    System.out.println("R_" + registerIndex1);
-                    processingRegisters.push(registerIndex1);
-                    mil(registerIndex1, bits);
-                    mih(registerIndex1, bits);
-                }
-
-                if (b < -995 && b > -1001){
-                    b = b + 1000;
-                    registerIndex2 = b;
-                    System.out.println("Rs to add : " + registerIndex2);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
-                    registerIndex2 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + b);
-                    System.out.println("R_" + registerIndex2);
-                    processingRegisters.push(registerIndex2);
-                    mil(registerIndex2, bits);
-                    mih(registerIndex2, bits);
-                }
-
-                add(registerIndex1, registerIndex2);
-                return registerIndex1-1000;
-
-            case '-':
-                if (a < -995 && a > -1001) {
-                    a = a +1000;
-                    registerIndex1 = a;
-                    System.out.println("Rd to sub : " + registerIndex1);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
-                    registerIndex1 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + a);
-                    System.out.println("R_" + registerIndex1);
-                    processingRegisters.push(registerIndex1);
-                    mil(registerIndex1, bits);
-                    mih(registerIndex1, bits);
-                }
-
-                if (b < -995 && b > -1001){
-                    b = b + 1000;
-                    registerIndex2 = b;
-                    System.out.println("Rs to sub : " + registerIndex2);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
-                    registerIndex2 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + b);
-                    System.out.println("R_" + registerIndex2);
-                    processingRegisters.push(registerIndex2);
-                    mil(registerIndex2, bits);
-                    mih(registerIndex2, bits);
-                }
-                sub(registerIndex1, registerIndex2);
-                return registerIndex1-1000;
-            case '*':
-                if (a < -995 && a > -1001) {
-                    a = a +1000;
-                    registerIndex1 = a;
-                    System.out.println("Rd to mul : " + registerIndex1);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
-                    registerIndex1 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + a);
-                    System.out.println("R_" + registerIndex1);
-                    processingRegisters.push(registerIndex1);
-                    mil(registerIndex1, bits);
-                    mih(registerIndex1, bits);
-                }
-
-                if (b < -995 && b > -1001){
-                    b = b + 1000;
-                    registerIndex2 = b;
-                    System.out.println("Rs to mul : " + registerIndex2);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
-                    registerIndex2 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + b);
-                    System.out.println("R_" + registerIndex2);
-                    processingRegisters.push(registerIndex2);
-                    mil(registerIndex2, bits);
-                    mih(registerIndex2, bits);
-                }
-                mul(registerIndex1, registerIndex2);
-                return registerIndex1 - 1000;
-            case '/':
-                if (b == 0){
-                    return Integer.MAX_VALUE;
-                }
-                return a / b;
-            case '|':
-                if (a < -995 && a > -1001) {
-                    a = a + 1000;
-                    registerIndex1 = a;
-                    System.out.println("Rd to orr : " + registerIndex1);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
-                    registerIndex1 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + a);
-                    System.out.println("R_" + registerIndex1);
-                    processingRegisters.push(registerIndex1);
-                    mil(registerIndex1, bits);
-                    mih(registerIndex1, bits);
-                }
-
-                if (b < -995 && b > -1001){
-                    b = b + 1000;
-                    registerIndex2 = b;
-                    System.out.println("Rs to orr : " + registerIndex2);
-                } else {
-                    bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
-                    registerIndex2 = uselessRegisterIndexFinder();
-                    System.out.println("token: " + b);
-                    System.out.println("R_" + registerIndex2);
-                    processingRegisters.push(registerIndex2);
-                    mil(registerIndex2, bits);
-                    mih(registerIndex2, bits);
-                }
-                orr(registerIndex1, registerIndex2);
-                return registerIndex1-1000;
+        if (a < -995 && a > -1001) {
+            a = a +1000;
+            registerIndex1 = a;
+            System.out.println("Rd to ... : " + registerIndex1);
+        } else {
+            bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(a)).replace(" ","0");
+            registerIndex1 = uselessRegisterIndexFinder();
+            System.out.println("token: " + a);
+            System.out.println("R_" + registerIndex1);
+            processingRegisters.push(registerIndex1);
+            mil(registerIndex1, bits);
+            mih(registerIndex1, bits);
         }
-        return 0;
+
+        if (b < -995 && b > -1001){
+            b = b + 1000;
+            registerIndex2 = b;
+            System.out.println("Rs to sub : " + registerIndex2);
+        } else {
+            bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(b)).replace(" ","0");
+            registerIndex2 = uselessRegisterIndexFinder();
+            System.out.println("token: " + b);
+            System.out.println("R_" + registerIndex2);
+            processingRegisters.push(registerIndex2);
+            mil(registerIndex2, bits);
+            mih(registerIndex2, bits);
+        }
+        registers[0] = registerIndex1;
+        registers[1] = registerIndex2;
+        return registers;
     }
 
     private void add(int Rdd, int Rss){
@@ -692,12 +621,14 @@ public class CodeGenerator {
         System.out.print("cmp : " + "1110" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000\n");
     }
 
-    private void brz(){
-        System.out.print("brz : " + "0000" + "10" + "00" + "00000000\n");
+    private void brz(int number){
+        System.out.print("brz : " + "0000" + "10" + "00" +
+                String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
     }
 
-    private void brc(){
-        System.out.print("brc : " + "0000" + "10" + "01" + "00000000\n");
+    private void brc(int number){
+        System.out.print("brc : " + "0000" + "10" + "01" +
+                String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
     }
 
 
