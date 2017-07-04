@@ -457,10 +457,11 @@ public class CodeGenerator {
                 mul(registers[0], registers[1]);
                 return registers[0]-1000;
 
+            case "<=":
             case ">":
                 registers = addToRegisters(a,b);
                 cmp(registers[1], registers[0]);
-                brc(2);
+                brc(4);
 
                 String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(1)).replace(" ","0");
                 int registerIndex1 = uselessRegisterIndexFinder();
@@ -468,6 +469,29 @@ public class CodeGenerator {
                 mil(registerIndex1, bits);
                 mih(registerIndex1, bits);
 
+                jpr(3);
+
+                bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(0)).replace(" ","0");
+                registerIndex1 = uselessRegisterIndexFinder();
+                processingRegisters.push(registerIndex1);
+                mil(registerIndex1, bits);
+                mih(registerIndex1, bits);
+
+                return registers[0]-1000;
+
+            case ">=":
+            case "<":
+                registers = addToRegisters(a,b);
+                cmp(registers[0], registers[1]);
+                brc(4);
+
+                bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(1)).replace(" ","0");
+                registerIndex1 = uselessRegisterIndexFinder();
+                processingRegisters.push(registerIndex1);
+                mil(registerIndex1, bits);
+                mih(registerIndex1, bits);
+
+                jpr(3);
                 bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(0)).replace(" ","0");
                 registerIndex1 = uselessRegisterIndexFinder();
                 processingRegisters.push(registerIndex1);
@@ -600,7 +624,6 @@ public class CodeGenerator {
             Rd = Rs;
             Rs = temp;
         }
-
         System.out.println(processingRegisters);
         //        processingRegisters.remove(registerIndexInStack(Rd));
         System.out.print("sta : " + "0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000\n");
@@ -631,6 +654,10 @@ public class CodeGenerator {
                 String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
     }
 
+    private void jpr(int number){
+        System.out.print("jpr : " + "0000" + "01" + "11" +
+                String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+    }
 
     private String binaryRegisterIndex(int number){
         switch (number){
