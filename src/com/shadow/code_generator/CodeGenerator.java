@@ -65,6 +65,7 @@ public class CodeGenerator {
             if (scs == 14 || scs == 15 || scs == 7){
                 key = ssm.expressionKeywordValueGenerator(token);
                 if (!token.equals("{"))
+                    System.out.println(token);
                     ecs = ExpressionTransitionTable.ett[ecs][key];
                 if (parenthesisStack.isEmpty()){
                     calculate();
@@ -76,6 +77,7 @@ public class CodeGenerator {
                 expressionCodeGeneratorHandler(ecs, token, key);
             } else {
                 key = ssm.statementKeywordValueGenerator(token);
+                ecs = 0;
                 if (token.equals("}") ){
                     if (inIf){
                         loopAndIfJumpCheck();
@@ -234,6 +236,7 @@ public class CodeGenerator {
                 expressionCheckCodeToPrint(token,cs, key);
                 break;
             }
+
             case 11: {
                 expressionCheckCodeToPrint(token,cs, key);
                 break;
@@ -272,10 +275,13 @@ public class CodeGenerator {
 
     private int uselessRegisterIndexFinder(){
         int index = 0;
-        for (int i = 0; i < 4; i++){
+        for (int i = 0; i < 63; i++){
             index = i;
 //            System.out.println(processingRegisters);
             if (!processingRegisters.contains(index)) break;
+        }
+        if (index > 4){
+            awp(1);
         }
         return index;
     }
@@ -745,6 +751,14 @@ public class CodeGenerator {
         } else {
             System.out.print("jpr : " + "0000" + "01" + "11" +
                     String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+        }
+    }
+
+    private void awp(int num){
+        if (inIf){
+            inIfCodes.add("awp : " + "00001010" + String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(num)).replace(" ","0"));
+        } else {
+            System.out.println("awp : " + "00001010" + String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(num)).replace(" ","0"));
         }
     }
 
