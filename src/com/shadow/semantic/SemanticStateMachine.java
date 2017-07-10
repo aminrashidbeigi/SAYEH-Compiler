@@ -11,7 +11,7 @@ public class SemanticStateMachine {
     private Map isVariableDefined;
     private Map variableValue;
     private Map variableType;
-    private boolean semanticIsOK = false;
+    private boolean semanticIsOK = true;
     private boolean isExpression = false;
 
     public SemanticStateMachine(ArrayList<String> tokens) {
@@ -52,6 +52,8 @@ public class SemanticStateMachine {
                 }
             }
             key = semanticKeyValueGenerator(token);
+            if (key == 5 || token.equals("}"))
+                continue;
             if (key == 0)
                 lastType = token;
             if (key == 2)
@@ -205,7 +207,7 @@ public class SemanticStateMachine {
         }
         else if (token.toCharArray()[0] == '\'') return 4;
         else if (token.equals("+") ||token.equals("-") ||token.equals("*") ||
-                token.equals("%") || token.equals("||") || token.equals("&&") || token.equals("==")
+                token.equals("%") || token.equals("||") || token.equals("&&") || token.equals("==") || token.equals("!=")
                 || token.equals("<") || token.equals(">") || token.equals("<=")
                 || token.equals(">=")) return 5;
         else if (token.equals("/")) return 6;
