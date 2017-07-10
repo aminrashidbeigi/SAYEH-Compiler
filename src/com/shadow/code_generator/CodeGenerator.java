@@ -28,16 +28,17 @@ public class CodeGenerator {
     private int lastValue;
     private Map<String, Integer> variableMemoryPosition;
     private String lastVariable = "";
-    private int leftExpressionRegister = 0;
-    private int rightExpressionRegister = 0;
-    private String lastComparisonOperation = "";
     private Stack<Integer> parenthesisStack;
+    private int ifCounter = 0;
+    private boolean inIf = false;
+    private ArrayList<String> inIfCodes;
 
     public CodeGenerator(ArrayList<String> tokens) {
         ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, new int[1]);
         R = new int[4];
         isValidRegisterIndex = new boolean[4];
         memory = new String[1024];
+        inIfCodes = new ArrayList<>();
         variableInMemoryIndex = new HashMap();
         processingRegisters = new Stack<>();
         operandStack = new Stack<>();
@@ -67,6 +68,7 @@ public class CodeGenerator {
                     ecs = ExpressionTransitionTable.ett[ecs][key];
                 if (parenthesisStack.isEmpty()){
                     calculate();
+                    inIf = true;
                     scs = 0;
                     continue;
                 }
@@ -74,9 +76,14 @@ public class CodeGenerator {
             } else {
                 key = ssm.statementKeywordValueGenerator(token);
                 if (token.equals("}") ){
+                    if (inIf){
+                        loopAndIfJumpCheck();
+                        inIf = false;
+                    }
                     scs = 0;
                     continue;
-                }
+                } else if (token.equals("{"))
+                    continue;
                 scs = stt.stt[scs][key];
                 if (scs == -8 && ls == 10 && key == 12) scs = 4;
                 statementCodeGeneratorHandler(scs, token, key);
@@ -273,7 +280,6 @@ public class CodeGenerator {
     }
 
     private int registerIndexInStack(int R){
-        int index = 0;
         for (int i = 0;i < processingRegisters.size(); i++){
             if (processingRegisters.get(i) == R)
                 return i;
@@ -293,8 +299,11 @@ public class CodeGenerator {
                 System.out.println("token: " + lastVariable);
                 System.out.println("R_" + registerIndex);
                 processingRegisters.push(registerIndex);
+                if (inIf) ifCounter++;
                 mil(registerIndex, bits);
+                if (inIf) ifCounter++;
                 mih(registerIndex, bits);
+                if (inIf) ifCounter++;
                 sta();
                 processingRegisters.removeAllElements();
             }
@@ -332,9 +341,12 @@ public class CodeGenerator {
                     int memoryAddressForLoad = uselessRegisterIndexFinder();
                     String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(variableMemoryPosition.get(token))).replace(" ","0");
                     processingRegisters.push(memoryAddressForLoad);
+                    if (inIf) ifCounter++;
                     mil(memoryAddressForLoad, bits);
+                    if (inIf) ifCounter++;
                     mih(memoryAddressForLoad, bits);
                     int loadedRegister = uselessRegisterIndexFinder();
+                    if (inIf) ifCounter++;
                     lda(loadedRegister, memoryAddressForLoad);
                     operandStack.push(memoryAddressForLoad - 1000);
                 }
@@ -349,7 +361,9 @@ public class CodeGenerator {
             System.out.println("R_" + registerIndex);
             lastValue = (int)token.charAt(1);
             processingRegisters.push(registerIndex);
+            if (inIf) ifCounter++;
             mil(registerIndex, bits);
+            if (inIf) ifCounter++;
             mih(registerIndex, bits);
         } else if (token.equals("true") || token.equals("false")){
             int number;
@@ -361,7 +375,9 @@ public class CodeGenerator {
             System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
+            if (inIf) ifCounter++;
             mil(registerIndex, bits);
+            if (inIf) ifCounter++;
             mih(registerIndex, bits);
         } else if (cs == 13) {
             String bits  = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(1)).replace(" ","0");
@@ -369,15 +385,19 @@ public class CodeGenerator {
             System.out.println("token: " + token);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
+            if (inIf) ifCounter++;
             mil(registerIndex, bits);
+            if (inIf) ifCounter++;
             mih(registerIndex, bits);
-
 
             int memoryAddressForLoad = uselessRegisterIndexFinder();
             bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(variableMemoryPosition.get(lastVariable))).replace(" ","0");
             processingRegisters.push(memoryAddressForLoad);
+            if (inIf) ifCounter++;
             mil(memoryAddressForLoad, bits);
+            if (inIf) ifCounter++;
             mih(memoryAddressForLoad, bits);
+            if (inIf) ifCounter++;
             lda(memoryAddressForLoad, memoryAddressForLoad);
 
             if (token.equals("++"))
@@ -386,6 +406,21 @@ public class CodeGenerator {
                 sub(memoryAddressForLoad, registerIndex);
 
         }
+    }
+
+    private void loopAndIfJumpCheck(){
+        int register = uselessRegisterIndexFinder();
+        String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(0).replace(" ","0"));
+        processingRegisters.push(register);
+        mil(register, bits);
+        mih(register, bits);
+        cmp(processingRegisters.pop(), processingRegisters.pop());
+        brz(ifCounter);
+        ifCounter = 0;
+        for (String s : inIfCodes){
+            System.out.println(s);
+        }
+        inIfCodes.clear();
     }
 
     private int variableRegister = 0;
@@ -398,7 +433,9 @@ public class CodeGenerator {
             System.out.println("token: " + lastValue);
             System.out.println("R_" + registerIndex);
             processingRegisters.push(registerIndex);
+            if (inIf) ifCounter++;
             mil(registerIndex, bits);
+            if (inIf) ifCounter++;
             mih(registerIndex, bits);
         }
         while (!operatorStack.empty())
@@ -444,37 +481,47 @@ public class CodeGenerator {
 
             case "+":
                 registers = addToRegisters(a,b);
+                if (inIf) ifCounter++;
                 add(registers[0], registers[1]);
                 return registers[0]-1000;
 
             case "-":
                 registers = addToRegisters(a,b);
+                if (inIf) ifCounter++;
                 sub(registers[0], registers[1]);
                 return registers[0]-1000;
 
             case "*":
                 registers = addToRegisters(a,b);
+                if (inIf) ifCounter++;
                 mul(registers[0], registers[1]);
                 return registers[0]-1000;
 
             case "<=":
             case ">":
                 registers = addToRegisters(a,b);
+                if (inIf) ifCounter++;
                 cmp(registers[1], registers[0]);
+                if (inIf) ifCounter++;
                 brc(4);
 
                 String bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(1)).replace(" ","0");
                 int registerIndex1 = uselessRegisterIndexFinder();
                 processingRegisters.push(registerIndex1);
+                if (inIf) ifCounter++;
                 mil(registerIndex1, bits);
+                if (inIf) ifCounter++;
                 mih(registerIndex1, bits);
 
+                if (inIf) ifCounter++;
                 jpr(3);
 
                 bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(0)).replace(" ","0");
                 registerIndex1 = uselessRegisterIndexFinder();
                 processingRegisters.push(registerIndex1);
+                if (inIf) ifCounter++;
                 mil(registerIndex1, bits);
+                if (inIf) ifCounter++;
                 mih(registerIndex1, bits);
 
                 return registers[0]-1000;
@@ -482,26 +529,34 @@ public class CodeGenerator {
             case ">=":
             case "<":
                 registers = addToRegisters(a,b);
+                if (inIf) ifCounter++;
                 cmp(registers[0], registers[1]);
+                if (inIf) ifCounter++;
                 brc(4);
 
                 bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(1)).replace(" ","0");
                 registerIndex1 = uselessRegisterIndexFinder();
                 processingRegisters.push(registerIndex1);
+                if (inIf) ifCounter++;
                 mil(registerIndex1, bits);
+                if (inIf) ifCounter++;
                 mih(registerIndex1, bits);
 
+                if (inIf) ifCounter++;
                 jpr(3);
                 bits = String.format("%"+Integer.toString(16)+"s",Integer.toBinaryString(0)).replace(" ","0");
                 registerIndex1 = uselessRegisterIndexFinder();
                 processingRegisters.push(registerIndex1);
+                if (inIf) ifCounter++;
                 mil(registerIndex1, bits);
+                if (inIf) ifCounter++;
                 mih(registerIndex1, bits);
 
                 return registers[0]-1000;
 
             case "|":
                 registers = addToRegisters(a,b);
+                if (inIf) ifCounter++;
                 orr(registers[0], registers[1]);
                 return registers[0]-1000;
         }
@@ -523,7 +578,9 @@ public class CodeGenerator {
             System.out.println("token: " + a);
             System.out.println("R_" + registerIndex1);
             processingRegisters.push(registerIndex1);
+            if (inIf) ifCounter++;
             mil(registerIndex1, bits);
+            if (inIf) ifCounter++;
             mih(registerIndex1, bits);
         }
 
@@ -537,7 +594,9 @@ public class CodeGenerator {
             System.out.println("token: " + b);
             System.out.println("R_" + registerIndex2);
             processingRegisters.push(registerIndex2);
+            if (inIf) ifCounter++;
             mil(registerIndex2, bits);
+            if (inIf) ifCounter++;
             mih(registerIndex2, bits);
         }
         registers[0] = registerIndex1;
@@ -546,15 +605,18 @@ public class CodeGenerator {
     }
 
     private void add(int Rdd, int Rss){
-        System.out.print("add : ");
         if (Rdd > Rss){
             int temp = Rdd;
             Rdd = Rss;
             Rss = temp;
         }
         Rs = Rdd;
-        System.out.println("1011" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
-        System.out.println(processingRegisters);
+        if (inIf){
+            inIfCodes.add("add : " + "1011" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        } else {
+            System.out.println("add : " + "1011" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+            System.out.println(processingRegisters);
+        }
         processingRegisters.remove(registerIndexInStack(Rss));
         System.out.println(processingRegisters);
     }
@@ -567,54 +629,81 @@ public class CodeGenerator {
             Rss = temp;
         }
         Rs = Rdd;
-        System.out.println("1100" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        if (inIf){
+            inIfCodes.add("1100" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        } else {
+            System.out.println("1100" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        }
+
         if (registerIndexInStack(Rss) > 0){
             processingRegisters.remove(registerIndexInStack(Rss));
         }
     }
 
     private void mul(int Rdd, int Rss){
-        System.out.print("mul : ");
         if (Rdd > Rss){
             int temp = Rdd;
             Rdd = Rss;
             Rss = temp;
         }
         Rs = Rdd;
-        System.out.println("1101" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
         if (registerIndexInStack(Rss) > 0){
             processingRegisters.remove(registerIndexInStack(Rss));
         }
-        System.out.println(processingRegisters);
+
+        if (inIf){
+            inIfCodes.add("mul : " + "1101" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        } else {
+            System.out.println("mul : " + "1101" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+            System.out.println(processingRegisters);
+        }
+
     }
 
     private void orr(int Rdd, int Rss){
-        System.out.print("add : ");
         if (Rdd > Rss){
             int temp = Rdd;
             Rdd = Rss;
             Rss = temp;
         }
         Rs = Rdd;
-        System.out.println("0111" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        if (inIf){
+            inIfCodes.add("add : " + "0111" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        } else{
+            System.out.println("add : " + "0111" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000");
+        }
+
         processingRegisters.remove(registerIndexInStack(Rss));
         System.out.println(processingRegisters);
     }
 
     private void mil(int registerIndex, String bits){
-        System.out.print("mil : ");
-        System.out.print("1111" + binaryRegisterIndex(registerIndex) + "00");
-        for (int i = 8; i < 16; i++)
-            System.out.print(bits.toCharArray()[i]);
-        System.out.println();
+        if(inIf){
+            String s = "mil : " + "1111" + binaryRegisterIndex(registerIndex) + "00";
+            for (int i = 8; i < 16; i++)
+                s += bits.toCharArray()[i];
+            inIfCodes.add(s);
+        } else {
+            System.out.print("mil : " + "1111" + binaryRegisterIndex(registerIndex) + "00");
+            for (int i = 8; i < 16; i++)
+                System.out.print(bits.toCharArray()[i]);
+            System.out.println();
+        }
     }
 
     private void mih(int registerIndex, String bits){
-        System.out.print("mih : ");
-        System.out.print("1111" + binaryRegisterIndex(registerIndex) + "01");
-        for (int i = 0; i < 8; i++)
-            System.out.print(bits.toCharArray()[i]);
-        System.out.println();
+        if (inIf){
+            String s = "mih : " + "1111" + binaryRegisterIndex(registerIndex) + "01";
+            for (int i = 0; i < 8; i++)
+                s += bits.toCharArray()[i];
+            inIfCodes.add(s);
+        }else {
+            System.out.print("mih : " + "1111" + binaryRegisterIndex(registerIndex) + "01");
+            for (int i = 0; i < 8; i++)
+                System.out.print(bits.toCharArray()[i]);
+            System.out.println();
+
+        }
         System.out.println(processingRegisters);
     }
 
@@ -626,8 +715,13 @@ public class CodeGenerator {
         }
         System.out.println(processingRegisters);
         //        processingRegisters.remove(registerIndexInStack(Rd));
-        System.out.print("sta : " + "0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000\n");
-        System.out.print("mvr : " + "0001" + binaryRegisterIndex(Rs) + binaryRegisterIndex(Rd) + "00000000\n");
+        if (inIf){
+            inIfCodes.add("sta : " + "0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000");
+            inIfCodes.add("mvr : " + "0001" + binaryRegisterIndex(Rs) + binaryRegisterIndex(Rd) + "00000000");
+        } else {
+            System.out.print("sta : " + "0011" + binaryRegisterIndex(Rd) + binaryRegisterIndex(Rs) + "00000000\n");
+            System.out.print("mvr : " + "0001" + binaryRegisterIndex(Rs) + binaryRegisterIndex(Rd) + "00000000\n");
+        }
     }
 
     private void lda(int Rdd, int Rss){
@@ -636,27 +730,56 @@ public class CodeGenerator {
             Rdd = Rss;
             Rss = temp;
         }
-        System.out.print("lda : " + "0010" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000\n");
-        System.out.print("mvr : " + "0001" + binaryRegisterIndex(Rss) + binaryRegisterIndex(Rdd) + "00000000\n");
+        if (inIf){
+            inIfCodes.add("lda : " + "0010" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000\n");
+            inIfCodes.add("mvr : " + "0001" + binaryRegisterIndex(Rss) + binaryRegisterIndex(Rdd) + "00000000\n");
+        } else {
+            System.out.print("lda : " + "0010" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000\n");
+            System.out.print("mvr : " + "0001" + binaryRegisterIndex(Rss) + binaryRegisterIndex(Rdd) + "00000000\n");
+
+        }
     }
 
     private void cmp(int Rdd, int Rss){
-        System.out.print("cmp : " + "1110" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000\n");
+        if (inIf){
+            inIfCodes.add("cmp : " + "1110" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000\n");
+        } else {
+            System.out.print("cmp : " + "1110" + binaryRegisterIndex(Rdd) + binaryRegisterIndex(Rss) + "00000000\n");
+        }
+
     }
 
     private void brz(int number){
-        System.out.print("brz : " + "0000" + "10" + "00" +
-                String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+        if (inIf){
+            inIfCodes.add("brz : " + "0000" + "10" + "00" +
+                    String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0"));
+        } else {
+            System.out.print("brz : " + "0000" + "10" + "00" +
+                    String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+
+        }
     }
 
     private void brc(int number){
-        System.out.print("brc : " + "0000" + "10" + "01" +
-                String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+        if (inIf){
+            inIfCodes.add("brc : " + "0000" + "10" + "01" +
+                    String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0"));
+        } else {
+            System.out.print("brc : " + "0000" + "10" + "01" +
+                    String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+
+        }
     }
 
     private void jpr(int number){
-        System.out.print("jpr : " + "0000" + "01" + "11" +
-                String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+        if (inIf){
+            inIfCodes.add("jpr : " + "0000" + "01" + "11" +
+                    String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0"));
+
+        } else {
+            System.out.print("jpr : " + "0000" + "01" + "11" +
+                    String.format("%"+Integer.toString(8)+"s",Integer.toBinaryString(number)).replace(" ","0") + "\n");
+        }
     }
 
     private String binaryRegisterIndex(int number){
