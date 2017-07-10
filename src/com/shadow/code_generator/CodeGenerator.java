@@ -411,15 +411,17 @@ public class CodeGenerator {
         mih(register, bits);
         cmp(processingRegisters.pop(), lastIfValue);
         inIf = false;
-        brz(inIfCodes.size());
+        if (isWhile) brz(inIfCodes.size() + 5);
+        else brz(inIfCodes.size() + 1);
+
         for (String s : inIfCodes){
             System.out.println(s);
         }
         if (isWhile){
-            brz(256);
-            brz(256);
-            brz(256);
-            brz(256 - inIfCodes.size());
+            brz(255);
+            brz(255);
+            brz(255);
+            brz(255 - inIfCodes.size());
         }
         inIfCodes.clear();
     }
