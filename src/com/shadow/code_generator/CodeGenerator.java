@@ -33,6 +33,7 @@ public class CodeGenerator {
     private ArrayList<String> inIfCodes;
     private int lastIfValue = 0;
     private boolean isWhile = false;
+    private Stack<Integer> openedBrace;
 
     public CodeGenerator(ArrayList<String> tokens) {
         ssm = new SyntaxStateMachine(StatementTransitionTable.stt, ExpressionTransitionTable.ett, tokens, new int[1]);
@@ -46,6 +47,7 @@ public class CodeGenerator {
         operatorStack = new Stack<>();
         parenthesisStack = new Stack<>();
         variableMemoryPosition = new HashMap<>();
+        openedBrace = new Stack<>();
         Arrays.fill(R, 0);
         Arrays.fill(memory, "");
         Arrays.fill(isValidRegisterIndex, true);
@@ -74,6 +76,7 @@ public class CodeGenerator {
                     ecs = ExpressionTransitionTable.ett[ecs][key];
                 if (parenthesisStack.isEmpty()){
                     calculate(token);
+                    openedBrace.push(1);
                     inIf = true;
                     scs = 0;
                     continue;
@@ -83,8 +86,8 @@ public class CodeGenerator {
                 key = ssm.statementKeywordValueGenerator(token);
                 ecs = 0;
                 if (token.equals("}") ){
-                    if (inIf){
-                        inIf = false;
+                    if (openedBrace.size() > 0){
+                        openedBrace.pop();
                         loopAndIfJumpCheck();
                     }
                     scs = 0;
@@ -179,11 +182,13 @@ public class CodeGenerator {
             case 4:
                 if (token.equals("(")) {
                     operatorStack.push(token);
-                } else if (token.equals(">") || token.equals("<") || token.equals("==") || token.equals("!=") ||
+                } else if (token.equals("||") || token.equals("&&") || token.equals("!") || token.equals("<") || token.equals(">") || token.equals("==") || token.equals("!=") ||
                         token.equals(">=") || token.equals("<=") || token.equals("+") || token.equals("-") ||
                         token.equals("*") || token.equals("/")) {
-                    while (!operatorStack.empty() && hasPrecedence(token, operatorStack.peek()))
-                        operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
+                    if (operandStack.size() > 1) {
+                        while (!operatorStack.empty() && hasPrecedence(token, operatorStack.peek()))
+                            operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
+                    }
                     operatorStack.push(token);
                 }
                 break;
@@ -191,7 +196,9 @@ public class CodeGenerator {
             case 9:
                 if (token.equals("(")) {
                     operatorStack.push(token);
-                } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
+                } else if (token.equals("||") || token.equals("&&") || token.equals("!") || token.equals("<") || token.equals("<") || token.equals("==") || token.equals("!=") ||
+                        token.equals(">=") || token.equals("<=") || token.equals("+") || token.equals("-") ||
+                        token.equals("*") || token.equals("/")) {
                     while (!operatorStack.empty() && hasPrecedence(token, operatorStack.peek()))
                         operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
                     operatorStack.push(token);
@@ -318,7 +325,9 @@ public class CodeGenerator {
         } else if (cs == 10) {
             if (token.equals("(")) {
                 operatorStack.push(token);
-            } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
+            } else if (token.equals("||") || token.equals("&&") || token.equals("!") || token.equals("<") || token.equals("<") || token.equals("==") || token.equals("!=") ||
+                    token.equals(">=") || token.equals("<=") || token.equals("+") || token.equals("-") ||
+                    token.equals("*") || token.equals("/")) {
                 while (!operatorStack.empty() && hasPrecedence(token, operatorStack.peek()))
                     operandStack.push(applyOp(operatorStack.pop(), operandStack.pop(), operandStack.pop()));
                 operatorStack.push(token);
@@ -514,6 +523,17 @@ public class CodeGenerator {
             case "*":
                 registers = addToRegisters(a,b);
                 mul(registers[0], registers[1]);
+                return registers[0]-1000;
+
+
+            case "||":
+                registers = addToRegisters(a,b);
+                orr(registers[0], registers[1]);
+                return registers[0]-1000;
+
+            case "&&":
+                registers = addToRegisters(a,b);
+                and(registers[0], registers[1]);
                 return registers[0]-1000;
 
             case "<=":
