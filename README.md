@@ -10,3 +10,10 @@ Parts
 - Syntax Analyzer
 - Semantic Analyzer
 - Code Generator
+
+Assembly Codes
+-
+
+<p align="center">
+  <img src="docs/assembly-codes.jpg">
+</p>
